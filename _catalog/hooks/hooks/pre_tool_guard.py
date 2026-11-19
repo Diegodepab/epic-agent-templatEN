@@ -10,17 +10,24 @@ import sys
 from pathlib import Path
 
 READ_ONLY_REF_PATTERN = re.compile(r"(?:^|/)_reference/(?:repos|assets)(?:/|$)")
+SENSITIVE_STATE_FILE_PATTERN = re.compile(
+    r"(?:^|/)(?:\.env(?:\.(?!example$|sample$|template$)[A-Za-z0-9_.-]+)?$|[^/]+\.(?:db|sqlite|sqlite3))$"
+)
 CATASTROPHIC_RM_PATTERN = re.compile(
     r"\brm\s+(?:-[a-zA-Z]*[rR][a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*[rR]|--recursive\s+--force|--force\s+--recursive)\s+"
     r"(?:/(?:\*|\s|$)|~(?:/|\s|$)|\"?\$HOME\"?(?:/|\s|$)|\"?\$\{HOME\}\"?(?:/|\s|$))"
 )
-GIT_PUSH_FORCE_PATTERN = re.compile(r"\bgit\b.*\bpush\b.*(?:\s--force\b|\s-[a-zA-Z]*f\b)")
+GIT_PUSH_PATTERN = re.compile(r"\bgit\b.*\bpush\b")
+GIT_PUSH_FORCE_PATTERN = re.compile(r"\bgit\b.*\bpush\b.*(?:\s--force(?:-with-lease)?\b|\s-[a-zA-Z]*f\b)")
 GIT_MAIN_BRANCH_PATTERN = re.compile(r"(?:\s|:)(?:main|master)(?:\s|$)")
 GIT_DESTRUCTIVE_PATTERN = re.compile(
     r"\bgit\b.*(?:\breset\s+--hard\b|\bclean\s+-[a-zA-Z]*(?:f[a-zA-Z]*d|d[a-zA-Z]*f|f[a-zA-Z]*x|x[a-zA-Z]*f))"
 )
 SHELL_MUTATE_REF_PATTERN = re.compile(
     r"(?:\b(?:rm|mv|rmdir|truncate|tee|chmod|chown)\b|\bsed\s+-i\b|>{1,2})\s*[^\n]*_reference/(?:repos|assets)(?:/|\s|$)"
+)
+SHELL_MUTATE_STATE_PATTERN = re.compile(
+    r"(?:\b(?:rm|mv|truncate|tee)\b|\bsed\s+-i\b|>{1,2})\s*[^\n]*(?:(?:^|[\s/])\.env(?:\.(?!example\b|sample\b|template\b)[A-Za-z0-9_.-]+)?(?:\s|$)|\.(?:db|sqlite|sqlite3)(?:\s|$))"
 )
 
 FILE_TOOLS = {"edit_file", "write_file", "replace", "Edit", "Write", "MultiEdit"}
@@ -53,6 +60,11 @@ def _evaluate_file_tool(raw_path: str) -> tuple[str, str]:
             "ask",
             "Target path is inside read-only _reference/{repos,assets}/. Confirm if modifying reference material is intentional.",
         )
+    if SENSITIVE_STATE_FILE_PATTERN.search(normalized):
+        return (
+            "ask",
+            "Target path is a sensitive runtime state/secret file (.env or *.db/*.sqlite). Confirm before editing.",
+        )
     return "allow", ""
 
 
@@ -66,10 +78,14 @@ def _evaluate_command_tool(command: str) -> tuple[str, str]:
         if GIT_MAIN_BRANCH_PATTERN.search(cmd):
             return "deny", "Blocked force-push to main/master branch."
         return "ask", "Confirm force-pushing branch history to remote."
+    if GIT_PUSH_PATTERN.search(cmd) and GIT_MAIN_BRANCH_PATTERN.search(cmd):
+        return "ask", "Confirm pushing directly to main/master branch."
     if GIT_DESTRUCTIVE_PATTERN.search(cmd):
         return "ask", "Confirm destructive Git working-tree command (git reset --hard or git clean)."
     if SHELL_MUTATE_REF_PATTERN.search(cmd):
         return "ask", "Command mutates read-only _reference/{repos,assets}/. Confirm if intentional."
+    if SHELL_MUTATE_STATE_PATTERN.search(cmd):
+        return "ask", "Command mutates a local .env or SQLite/DB state file. Confirm if intentional."
     return "allow", ""
 
 

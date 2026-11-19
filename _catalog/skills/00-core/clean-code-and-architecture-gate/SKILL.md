@@ -11,6 +11,7 @@ Adapted from `btseee/clean-code-skills`, `ciembor/agent-rules-books`, `dietrichg
 
 - **Joining a repo or need languages, frameworks, and verification commands?** -> Run `python3 scripts/detect_stack.py --json` (add `--write` to cache `.clean/context.json`)
 - **Auditing changed files or the full repo for oversized units, sibling `_v2` copies, or debug leftovers?** -> Run `python3 scripts/scan_repo.py --changed --json` (or omit `--changed`)
+- **Adopting into a legacy/brownfield repo with existing files >350 lines?** -> Freeze caps with `python3 scripts/size_ratchet.py --root . --init` and enforce non-increasing caps via `size_ratchet.py --root .` during Strangler-Fig splits
 - **Harvesting `shortcut:` debt, checking untouched external callers after a diff, or finding Lean removable lines/deps?** -> Run `python3 scripts/audit_shortcuts_and_lean.py --root .`
 - **Finding misplaced roles, circular dependencies, unreferenced dead code, duplicate functions, or junk drawers?** -> Run `python3 scripts/map_structure.py --path src --json`
 - **Verifying inward Clean Architecture / DDD boundaries (`domain <- application <- adapter/infra`)?** -> Declare fenced `clean-architecture` block in `docs/ARCHITECTURE.md` and run `python3 scripts/check_boundaries.py --json`
@@ -23,6 +24,7 @@ Adapted from `btseee/clean-code-skills`, `ciembor/agent-rules-books`, `dietrichg
 |---|---|---|
 | `scripts/detect_stack.py` | Detects languages, frameworks, test runners, and active reference packs | JSON summary or `.clean/context.json` (`--write`) |
 | `scripts/scan_repo.py` | Language-agnostic smell evidence (`_v2` siblings, debug logs, skipped tests) | JSON / summary (`exit 0`) |
+| `scripts/size_ratchet.py` | Freezes oversized legacy files (>350L) in `.agents/size-ratchet.json` and blocks growth | Exit `0` / `1` on cap regression |
 | `scripts/audit_shortcuts_and_lean.py` | Collects `shortcut:` debt ledger, checks diff caller impact, quantifies `Lean: -N lines, -M deps` | Exit `0` / `1` on `--strict` |
 | `scripts/map_structure.py` | Multi-language symbol/role mapper across 12 structural findings (`cycles`, `misplaced`, `unreferenced`, `duplicates`) | JSON / `.clean/structure.{md,json}` (`--write`) |
 | `scripts/check_boundaries.py` | Enforces inward Dependency Rule against declared `clean-architecture` layer fences | Exit `0` (clean) / `1` (violation) / `2` (no config) |

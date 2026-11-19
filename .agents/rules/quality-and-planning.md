@@ -6,7 +6,7 @@ trigger: always_on
 
 ## 1. Static-Analyzer Maintainability Standards (SonarQube / CodeClimate Grade A)
 
-- **File Length**: Keep imperative source code files under **350 lines** (excluding declarative configs/schemas, database migrations, `.tscn` scenes, shaders, or static data dictionaries). Split growing imperative modules into cohesive submodules before exceeding this threshold.
+- **File Length & Brownfield Ratchet**: Keep new imperative source files under **350 lines** (excluding declarative configs/schemas, database migrations, `.tscn` scenes, shaders, or static data dictionaries). In existing brownfield repositories with legacy files >350 lines, freeze per-file caps via `size_ratchet.py --init` (`.agents/size-ratchet.json`), forbid further growth, and split them incrementally (Strangler-Fig) with contract tests instead of risky big-bang rewrites.
 - **Function Size & Complexity**: Keep functions/methods under **50 lines**, maximum **3 indentation levels**, and cognitive complexity <= 15. Use early-return guard clauses to flatten nested branches.
 - **Single Responsibility & DRY**: Each module and function must have one clear responsibility. Eliminate duplicated logic by extracting pure helpers, without introducing premature abstractions.
 
