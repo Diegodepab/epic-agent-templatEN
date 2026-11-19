@@ -1,0 +1,447 @@
+{
+  "frontend-quality-and-design-gate": {
+    "triggers": {
+      "positive_keywords": ["frontend", "ui-contract.json", "anti-slop", "Phosphor SVG"],
+      "negative_keywords": ["backend APIs"]
+    },
+    "cases": [
+      {
+        "id": "valid_contract_init_neobrutalist",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/run_frontend_pipeline.py", "init", "--style", "neobrutalist", "--project", "demo"],
+        "expect_rc": 0,
+        "expect_files": [".agents/ui-contract.json"],
+        "expect_in": ["style=neobrutalist", "ui-design-tokens-and-presets"]
+      },
+      {
+        "id": "valid_full_pipeline_clean",
+        "kind": "valid",
+        "files": {"src/Clean.tsx": "import { Compass } from '@phosphor-icons/react';\nexport const Nav = () => <button className=\"font-mono border\"><Compass /> Go</button>;\n"},
+        "cmd": ["bash", "-lc", "python3 {SKILL}/scripts/run_frontend_pipeline.py init --style terminal --project demo && python3 {SKILL}/scripts/run_frontend_pipeline.py run --target src"],
+        "expect_rc": 0,
+        "expect_in": ["[aesthetic-lint] style=terminal"]
+      },
+      {
+        "id": "malformed_missing_contract_run",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/run_frontend_pipeline.py", "run", "--contract", ".agents/missing.json"],
+        "expect_nonzero": true
+      },
+      {
+        "id": "valid_icon_search",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/icon_search.py", "compass arrow", "--limit", "3"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["@phosphor-icons"]
+      },
+      {
+        "id": "invalid_emoji_and_svg_no_viewbox",
+        "kind": "invalid",
+        "files": {"src/App.tsx": "<button>🚀<svg></svg></button>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/anti_slop_scanner.py", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["emoji-ui", "svg-viewbox"]
+      },
+      {
+        "id": "clean_component_pass",
+        "kind": "clean_fp",
+        "files": {"src/Clean.tsx": "import { Compass } from '@phosphor-icons/react';\nexport const Nav = () => <Compass />;\n"},
+        "cmd": ["python3", "{SKILL}/scripts/anti_slop_scanner.py", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 0
+      },
+      {
+        "id": "valid_extract_colors_from_src_dir",
+        "kind": "valid",
+        "files": {"src/app.css": ":root { --color-brand: #2563eb; }\n.btn { color: var(--color-brand); }\n"},
+        "cmd": ["node", "{SKILL}/scripts/extract-colors.cjs", "src/", "--json"],
+        "requires_bin": "node",
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["#2563eb", "--color-brand"]
+      },
+      {
+        "id": "invalid_hardcoded_html_hex_detected",
+        "kind": "invalid",
+        "files": {"src/page.html": "<html><body style=\"color:#ff00aa\">Hi</body></html>\n"},
+        "cmd": ["node", "{SKILL}/scripts/validate-tokens.cjs", "--dir", "src/"],
+        "requires_bin": "node",
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["#ff00aa"]
+      },
+      {
+        "id": "valid_tokens_json_schema",
+        "kind": "valid",
+        "files": {"tokens.json": {"color": {"brand": {"$value": "#2563eb"}}}},
+        "cmd": ["node", "{SKILL}/scripts/validate-tokens.cjs", "tokens.json"],
+        "requires_bin": "node",
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["Validated 1 token"]
+      },
+      {
+        "id": "invalid_ts_any_strict_caught",
+        "kind": "invalid",
+        "files": {
+          "tsconfig.json": {"compilerOptions": {"strict": false}},
+          "src/bad.ts": "export const f = (x: any) => x as string;\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/ts_diagnostic.py", "--target", ".", "--strict", "--json"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["\"any_count\": 1", "\"strict\": false"]
+      },
+      {
+        "id": "invalid_i18n_locale_mismatch_and_hardcoded",
+        "kind": "invalid",
+        "files": {
+          "locales/en/common.json": {"hello": "Hello", "bye": "Bye"},
+          "locales/es/common.json": {"hello": "Hola"},
+          "src/App.tsx": "export const App = () => <div>Welcome Back</div>;\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/i18n_checker.py", "--target", ".", "--strict"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["Missing 1 key", "hardcoded literal string"]
+      }
+    ]
+  },
+  "frontend-lighthouse-and-design-audit": {
+    "triggers": {
+      "positive_keywords": ["Playwright", "Lighthouse", "llms.txt"],
+      "negative_keywords": ["static code formatting"]
+    },
+    "cases": [
+      {
+        "id": "valid_design_audit_help",
+        "kind": "valid",
+        "requires_bin": "node",
+        "cmd": ["node", "{SKILL}/scripts/design-audit.mjs", "--help"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["Usage: node design-audit.mjs"]
+      },
+      {
+        "id": "missing_playwright_explicit_skip_not_pass",
+        "kind": "missing_deps",
+        "requires_bin": "node",
+        "files": {"index.html": "<html><body><h1>Hello</h1></body></html>\n"},
+        "cmd": ["node", "{SKILL}/scripts/design-audit.mjs", "--file", "index.html"],
+        "expect_rc": 2,
+        "expect_in": ["SKIP [missing-dep]"],
+        "forbid_in": ["PASS"]
+      },
+      {
+        "id": "malformed_closed_port_agentic",
+        "kind": "malformed",
+        "requires_bin": "node",
+        "cmd": ["node", "{SKILL}/scripts/agentic-readiness-check.mjs", "http://127.0.0.1:19999"],
+        "expect_rc": 0,
+        "expect_in": ["Agentic Lighthouse config present: true", "FAIL [llms.txt]"]
+      },
+      {
+        "id": "valid_polish_audit_static_honest_verdict",
+        "kind": "valid",
+        "files": {
+          "index.html": "<!doctype html><html lang=\"en\"><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Demo</title></head><body><main><h1>Clean Page</h1><p>Short concise copy.</p></main></body></html>\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/polish_audit.py", "index.html", "--static", "--no-shots", "--json"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["\"engine\": \"static\"", "\"pass\": false"]
+      },
+      {
+        "id": "valid_agentic_web_readiness_directory",
+        "kind": "clean_fp",
+        "files": {
+          "llms.txt": "# Demo App\n\nAgent-first documentation entrypoint. Read [API Docs](/docs/api) and [Catalog](/.well-known/ard.json).\n",
+          ".well-known/ard.json": {
+            "entries": [
+              {
+                "identifier": "urn:air:demo:core:docs",
+                "displayName": "Demo MCP Toolset",
+                "type": "application/mcp-server-card+json",
+                "url": "https://example.invalid/mcp.json",
+                "representativeQueries": ["search documentation", "query schemas"]
+              }
+            ]
+          },
+          "index.html": "<!doctype html><html><body><main><h1>Demo</h1><form toolname=\"search_docs\" tooldescription=\"Search docs by keyword\"><label for=\"q\">Query</label><input id=\"q\"></form></main></body></html>\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/verify_agentic_web_readiness.py", "--dir", ".", "--require-agentic", "--json"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["\"status\": \"PASS\"", "search_docs"]
+      },
+      {
+        "id": "invalid_agentic_bad_urn_blocked",
+        "kind": "invalid",
+        "files": {
+          "llms.txt": "short",
+          ".well-known/ard.json": {"entries": [{"identifier": "bad-urn", "displayName": "Bad", "type": "application/mcp-server+json", "url": "https://x.invalid", "data": {}}]}
+        },
+        "cmd": ["python3", "{SKILL}/scripts/verify_agentic_web_readiness.py", "--dir", ".", "--require-agentic"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["ERR:", "Missing required H1", "RFC 8141 URN"]
+      },
+      {
+        "id": "valid_tastegate_help",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/tastegate_audit.py", "--help"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["tastegate"]
+      }
+    ]
+  },
+  "ui-design-tokens-and-presets": {
+    "triggers": {
+      "positive_keywords": ["W3C design tokens", "minimalist", "4-phase minimalist", "copy-hygiene", "glassmorphic"],
+      "negative_keywords": ["WebGL pages"]
+    },
+    "cases": [
+      {
+        "id": "valid_preset_tokens_terminal",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/preset_tokens.py", "--style", "terminal", "--out-dir", "tokens_out"],
+        "expect_rc": 0,
+        "expect_files": ["tokens_out/terminal.tokens.json", "tokens_out/design-tokens.css"],
+        "expect_in": ["Wrote preset `terminal`"]
+      },
+      {
+        "id": "valid_preset_tokens_minimalist_dark_retriever",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/preset_tokens.py", "--style", "minimalist", "--tone", "dark", "--stdout"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["#141517", "--tracking-display: -0.03em", ".ui-dot-canvas", "--ease-snappy"]
+      },
+      {
+        "id": "valid_token_generation",
+        "kind": "valid",
+        "requires_bin": "node",
+        "files": {"tokens.json": {"colors": {"surface": "#FAF8F5", "ink": "#141619"}}},
+        "cmd": ["node", "{SKILL}/scripts/generate-tokens.cjs", "-c", "tokens.json", "-o", "tokens.css"],
+        "expect_rc": 0,
+        "expect_files": ["tokens.css"]
+      },
+      {
+        "id": "invalid_bare_backdrop_blur_caught",
+        "kind": "invalid",
+        "files": {"src/Card.tsx": "<div className=\"backdrop-blur animate-bounce\">Hi</div>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/aesthetic_lint.py", "--style", "minimalist", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["minimalist-no-blur", "minimalist-no-bounce"]
+      },
+      {
+        "id": "invalid_empty_hype_copy_caught",
+        "kind": "invalid",
+        "files": {"src/Hero.tsx": "export const Hero = () => <h1>Revolutionary seamless platform</h1>;\n"},
+        "cmd": ["python3", "{SKILL}/scripts/aesthetic_lint.py", "--style", "minimalist", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["copy-empty-hype"]
+      },
+      {
+        "id": "clean_minimalist_retriever_component",
+        "kind": "clean_fp",
+        "files": {"src/Hero.tsx": "export const Hero = () => <section className=\"ui-dot-canvas\"><p className=\"ui-eyebrow\">LOCAL-FIRST ARCHIVE</p><h1 className=\"ui-headline\">Deleted is not gone.</h1></section>;\n"},
+        "cmd": ["python3", "{SKILL}/scripts/aesthetic_lint.py", "--style", "minimalist", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 0
+      },
+      {
+        "id": "clean_glassmorphic_blur_allowed",
+        "kind": "clean_fp",
+        "files": {"src/Glass.tsx": "<div className=\"backdrop-blur-md border border-white/15\">Hi</div>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/aesthetic_lint.py", "--style", "glassmorphic", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 0
+      },
+      {
+        "id": "invalid_terminal_pill_cards_caught",
+        "kind": "invalid",
+        "files": {"src/Tui.tsx": "<div className=\"font-mono rounded-3xl\">TUI</div>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/aesthetic_lint.py", "--style", "terminal", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["terminal-sharp-edges"]
+      },
+      {
+        "id": "valid_spring_physics_calculator",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/physics_calculator.py", "--critical", "--mass", "1", "--tension", "180"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["Critically Damped", "Est. settle time"]
+      }
+    ]
+  },
+  "ui-fluid-novel-system": {
+    "triggers": {
+      "positive_keywords": ["BM25", "67+ styles", "scrollytelling"],
+      "negative_keywords": ["CRUD tables"]
+    },
+    "cases": [
+      {
+        "id": "valid_design_system_search",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/search.py", "editorial serif portfolio", "--design-system"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["DESIGN SYSTEM"]
+      },
+      {
+        "id": "malformed_bad_domain",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/search.py", "test", "--domain", "invalid_domain_xyz"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "frontend-dataviz-and-charts": {
+    "triggers": {
+      "positive_keywords": ["chart encodings", "synonym lookup", "G6 v5"],
+      "negative_keywords": ["games"]
+    },
+    "cases": [
+      {
+        "id": "valid_taxonomy_search",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/chart_advisor.py", "search", "--query", "sankey conversion"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["sankey"]
+      },
+      {
+        "id": "invalid_g6_v4_antipattern_detected",
+        "kind": "invalid",
+        "files": {"src/graph.ts": "import { G6 } from '@antv/g6';\nconst g = new G6.Graph({ nodeStrength: -5 });\n"},
+        "cmd": ["python3", "{SKILL}/scripts/chart_advisor.py", "audit", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["new G6.Graph", "nodeStrength"]
+      }
+    ]
+  },
+  "brand-logo-and-svg-forge": {
+    "triggers": {
+      "positive_keywords": ["SVG", "favicon.ico", "README"],
+      "negative_keywords": ["sprite sheets"]
+    },
+    "cases": [
+      {
+        "id": "valid_svg_audit_clean",
+        "kind": "clean_fp",
+        "files": {"mark.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" width=\"256\" height=\"256\"><title>Clean</title><path fill=\"#0F7C80\" fill-rule=\"evenodd\" d=\"M32 32h192v192H32zM76 76h104v104H76z\"/></svg>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/svg_audit.py", "mark.svg", "--bg", "#ffffff"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["100/100"]
+      },
+      {
+        "id": "invalid_live_text_caught",
+        "kind": "invalid",
+        "files": {"bad.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><text x=\"10\" y=\"50\">X</text></svg>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/svg_audit.py", "bad.svg"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["live-text"]
+      },
+      {
+        "id": "valid_png_and_web_icons_inkscape",
+        "kind": "valid",
+        "requires_bin": "inkscape",
+        "files": {"mark.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" width=\"256\" height=\"256\"><title>Clean</title><rect x=\"32\" y=\"32\" width=\"192\" height=\"192\" fill=\"#0F7C80\"/></svg>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/export_variants.py", "mark.svg", "--web-icons", "--out-dir", "dist"],
+        "expect_rc": 0,
+        "expect_files": ["dist/favicon.ico", "dist/site.webmanifest", "dist/icon-192.png"]
+      },
+      {
+        "id": "valid_dual_tone_icon_fg_auto_contrast",
+        "kind": "valid",
+        "requires_bin": "inkscape",
+        "files": {"dual.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" width=\"256\" height=\"256\"><title>Dual</title><path fill=\"#111827\" d=\"M32 32h192v64H32z\"/><path fill=\"#2563EB\" d=\"M64 112h128v96H64z\"/></svg>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/export_variants.py", "dual.svg", "--icon-bg", "#111827", "--icon-fg", "auto", "--only", "app-icon", "--png", "256", "--out-dir", "dist"],
+        "expect_rc": 0,
+        "expect_files": ["dist/dual-app-icon.svg", "dist/dual-app-icon-256.png"],
+        "expect_file_contains": {
+          "dist/dual-app-icon.svg": ["fill=\"#ffffff\"", "fill=\"#2563EB\""]
+        }
+      },
+      {
+        "id": "valid_readme_lockup_light_dark",
+        "kind": "valid",
+        "requires_bin": "inkscape",
+        "files": {"mark.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" width=\"256\" height=\"256\"><title>Clean</title><rect x=\"32\" y=\"32\" width=\"192\" height=\"192\" fill=\"#111827\"/></svg>\n"},
+        "cmd": ["python3", "{SKILL}/scripts/readme_lockup.py", "mark.svg", "--title", "Demo Repo", "--tagline", "Fast Tooling", "--card", "--out-dir", "brand"],
+        "expect_rc": 0,
+        "expect_files": ["brand/demo-repo-banner-light.png", "brand/demo-repo-banner-dark.png", "brand/demo-repo-readme-snippet.md"],
+        "expect_in": ["prefers-color-scheme: dark"]
+      },
+      {
+        "id": "valid_readme_custom_lockup_banner",
+        "kind": "valid",
+        "requires_bin": "inkscape",
+        "files": {
+          "mark.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" width=\"256\" height=\"256\"><title>Mark</title><circle cx=\"128\" cy=\"128\" r=\"80\" fill=\"#111111\"/></svg>\n",
+          "lock.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 568 160\" width=\"568\" height=\"160\"><title>Lock</title><circle cx=\"80\" cy=\"80\" r=\"40\" fill=\"#111111\"/><rect x=\"150\" y=\"60\" width=\"340\" height=\"40\" fill=\"#FF4D2D\"/></svg>\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/readme_lockup.py", "mark.svg", "--lockup", "lock.svg", "--title", "Custom Lock", "--card", "--out-dir", "brand"],
+        "expect_rc": 0,
+        "expect_files": ["brand/custom-lock-banner-light.png", "brand/custom-lock-banner-dark.png"],
+        "expect_file_contains": {
+          "brand/custom-lock-banner-dark.svg": ["fill=\"#f8fafc\"", "fill=\"#FF4D2D\""]
+        }
+      },
+      {
+        "id": "valid_concept_sheet_greyscale_no_filter",
+        "kind": "valid",
+        "requires_bin": "inkscape",
+        "files": {
+          "a.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" width=\"256\" height=\"256\"><title>A</title><circle cx=\"128\" cy=\"128\" r=\"80\" fill=\"#FF4D2D\"/></svg>\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/concept_sheet.py", "a.svg", "--greyscale", "-o", "concepts.png"],
+        "expect_rc": 0,
+        "expect_files": ["concepts.svg", "concepts.png"],
+        "expect_file_contains": {
+          "concepts.svg": ["#717171"]
+        }
+      },
+      {
+        "id": "valid_mascot_extract_png_and_ico",
+        "kind": "valid",
+        "requires_python_mod": "PIL",
+        "generators": ["green_strip"],
+        "cmd": ["python3", "{SKILL}/scripts/extract_mascot_png.py", "assets/green_strip.png", "--ico", "--outline-px", "4", "--sizes", "128", "--out-dir", "dist"],
+        "expect_rc": 0,
+        "expect_files": ["dist/green_strip-128.png", "dist/green_strip-favicon.ico"]
+      },
+      {
+        "id": "malformed_mascot_missing_source",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/extract_mascot_png.py", "missing.png"],
+        "expect_nonzero": true
+      },
+      {
+        "id": "malformed_missing_symbol_lockup",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/readme_lockup.py", "missing.svg", "--title", "Demo"],
+        "expect_nonzero": true
+      },
+      {
+        "id": "valid_search_library_metadata",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/search_library.py", "--type", "letterform", "--technique", "negative-space", "--summary"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["logos match"]
+      }
+    ]
+  }
+}
