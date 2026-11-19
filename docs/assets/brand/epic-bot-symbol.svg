@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="epic-agent-templatEN bot mark">
+  <title>epic-agent-templatEN</title>
+  <!-- Antenna orb (signature accent) -->
+  <circle cx="128" cy="48" r="18" fill="#FF5A36"/>
+  <!-- Antenna stem -->
+  <path d="M120 64h16v22h-16z" fill="#111315"/>
+  <!-- Modular side ears -->
+  <rect x="18" y="128" width="16" height="52" rx="8" fill="#111315"/>
+  <rect x="222" y="128" width="16" height="52" rx="8" fill="#111315"/>
+  <!-- Bot head silhouette with negative-space visor cutout -->
+  <path fill="#111315" fill-rule="evenodd" d="
+    M84 82 h88 a44 44 0 0 1 44 44 v56 a44 44 0 0 1 -44 44 h-88 a44 44 0 0 1 -44 -44 v-56 a44 44 0 0 1 44 -44 z
+    M96 120 h64 a28 28 0 0 1 28 28 v12 a28 28 0 0 1 -28 28 h-64 a28 28 0 0 1 -28 -28 v-12 a28 28 0 0 1 28 -28 z
+  "/>
+  <!-- Iconic pill eyes -->
+  <rect x="92" y="136" width="20" height="36" rx="10" fill="#111315"/>
+  <rect x="144" y="136" width="20" height="36" rx="10" fill="#111315"/>
+</svg>
