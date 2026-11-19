@@ -1,0 +1,407 @@
+{
+  "backend-quality-and-contracts": {
+    "triggers": {
+      "positive_keywords": ["clean-architecture", "ruff", "N+1 DB loops"],
+      "negative_keywords": ["godot", "spritesheet"]
+    },
+    "cases": [
+      {
+        "id": "valid_clean_layered_module",
+        "kind": "clean_fp",
+        "files": {"src/domain/calc.py": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    qty: int\n\ndef total_qty(items: list[Item]) -> int:\n    return sum(i.qty for i in items)\n"},
+        "cmd": ["python3", "{SKILL}/scripts/quality_and_contracts.py", "--target", "src", "--no-wrappers"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["findings=0"]
+      },
+      {
+        "id": "invalid_silent_except_detected",
+        "kind": "invalid",
+        "files": {"src/bad.py": "def load_cfg():\n    try:\n        return int('x')\n    except Exception:\n        pass\n"},
+        "cmd": ["python3", "{SKILL}/scripts/quality_and_contracts.py", "--target", "src", "--no-wrappers"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["silent-except"]
+      },
+      {
+        "id": "malformed_missing_target",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/quality_and_contracts.py", "--target", "missing_dir"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "backend-security-and-owasp-gate": {
+    "triggers": {
+      "positive_keywords": ["leaked credentials", "OWASP", "supply-chain dependencies", "bandit"],
+      "negative_keywords": ["css layout"]
+    },
+    "cases": [
+      {
+        "id": "valid_clean_service",
+        "kind": "clean_fp",
+        "files": {"src/safe.py": "import os\ndef get_port() -> int:\n    return int(os.getenv('APP_PORT', '8080'))\n"},
+        "cmd": ["python3", "{SKILL}/scripts/security_gate.py", "--target", "src", "--no-wrappers"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["findings=0"]
+      },
+      {
+        "id": "invalid_eval_shell_blocked",
+        "kind": "invalid",
+        "files": {"src/vuln.py": "import subprocess\ndef run_user(cmd: str) -> None:\n    subprocess.run(cmd, shell=True)\n"},
+        "cmd": ["python3", "{SKILL}/scripts/security_gate.py", "--target", "src", "--no-wrappers"],
+        "check_read_only": true,
+        "expect_rc": 1
+      },
+      {
+        "id": "valid_pinned_supply_chain_pass",
+        "kind": "clean_fp",
+        "files": {
+          "requirements.txt": "fastapi==0.115.0\n",
+          "Dockerfile": "FROM python:3.12-slim\nUSER nobody\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/dependency_scanner.py", "--target", ".", "--output", "json", "--strict"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["\"label\": \"PASS\""]
+      },
+      {
+        "id": "invalid_supply_chain_risks_blocked",
+        "kind": "invalid",
+        "files": {
+          "requirements.txt": "pyyaml\npickle\n",
+          "Dockerfile": "FROM python:latest\nRUN curl -sSL https://example.invalid/install.sh | bash\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/dependency_scanner.py", "--target", ".", "--output", "json", "--strict"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["unpinned_base_image", "curl_pipe_bash"]
+      },
+      {
+        "id": "malformed_missing_target",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/security_gate.py", "--target", "missing_dir"],
+        "expect_nonzero": true
+      },
+      {
+        "id": "invalid_context_sqli_and_injection_caught",
+        "kind": "invalid",
+        "files": {
+          "src/routes.py": "import flask\ndef q():\n    uid = flask.request.args['id']\n    cursor.execute(f'SELECT * FROM users WHERE id={uid}')\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/injection_scanner.py", "--target", "src", "--output", "json", "--strict"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["sql_injection"]
+      },
+      {
+        "id": "invalid_deep_entropy_secret_caught",
+        "kind": "invalid",
+        "cmd": [
+          "bash",
+          "-lc",
+          "d=$(mktemp -d); trap 'rm -rf \"$d\"' EXIT; python3 -c \"import pathlib,sys; p=pathlib.Path(sys.argv[1])/'cfg.py'; p.write_text('DB_URI = \\\"' + 'https://' + 'svc' + ':' + 'A7xK' + '9mP2' + 'qR4v' + '@db.internal.invalid/app\\\"\\n')\" \"$d\" && python3 {SKILL}/scripts/secrets_scanner.py --target \"$d\" --output json --strict"
+        ],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["url_embedded_credentials"]
+      },
+      {
+        "id": "valid_scope_allow_deny_gates",
+        "kind": "valid",
+        "cmd": ["bash", "-lc", "python3 {SKILL}/scripts/scope.py --selftest && python3 {SKILL}/scripts/scope.py --in-scope api.example.com --out-of-scope admin.example.com https://api.example.com/v1"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["scope.py self-test: PASS", "IN-SCOPE"]
+      },
+      {
+        "id": "invalid_out_of_scope_blocked",
+        "kind": "invalid",
+        "cmd": ["python3", "{SKILL}/scripts/scope.py", "--in-scope", "example.com", "--out-of-scope", "admin.example.com", "https://admin.example.com/panel"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["OUT-OF-SCOPE"]
+      }
+    ]
+  },
+  "test-and-mutation-gate": {
+    "triggers": {
+      "positive_keywords": ["ghost tests", "mutmut", "server lifecycles"],
+      "negative_keywords": ["ui css"]
+    },
+    "cases": [
+      {
+        "id": "valid_real_assert_and_parity",
+        "kind": "clean_fp",
+        "files": {
+          "src/math_ops.py": "def inc(x: int) -> int:\n    return x + 1\n",
+          "tests/test_math_ops.py": "def test_inc():\n    assert 2 == 1 + 1\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/test_audit.py", "--root", "."],
+        "check_read_only": true,
+        "expect_rc": 0
+      },
+      {
+        "id": "invalid_ghost_test_detected",
+        "kind": "invalid",
+        "files": {
+          "src/mod.py": "def fn() -> int:\n    return 1\n",
+          "tests/test_mod.py": "def test_ghost():\n    x = 1\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/test_audit.py", "--root", "."],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["ghost-test"]
+      },
+      {
+        "id": "valid_with_server_ephemeral",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/with_server.py", "--server", "python3 -m http.server 19451", "--port", "19451", "--", "python3", "-c", "print('srv_up')"],
+        "expect_rc": 0,
+        "expect_in": ["srv_up"]
+      }
+    ]
+  },
+  "docker-and-env-auditor": {
+    "triggers": {
+      "positive_keywords": [".env.example", "Dockerfiles", "non-root"],
+      "negative_keywords": ["kubernetes"]
+    },
+    "cases": [
+      {
+        "id": "valid_env_sync",
+        "kind": "clean_fp",
+        "files": {
+          ".env.example": "APP_MODE=prod\n",
+          "src/cfg.py": "import os\nMODE = os.getenv('APP_MODE', 'dev')\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/docker_env_linter.py", "--root", "."],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["findings=0"]
+      },
+      {
+        "id": "invalid_missing_env_var_detected",
+        "kind": "invalid",
+        "files": {
+          ".env.example": "OTHER=1\n",
+          "src/cfg.py": "import os\nKEY = os.getenv('SECRET_API_KEY', '')\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/docker_env_linter.py", "--root", "."],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["SECRET_API_KEY"]
+      }
+    ]
+  },
+  "ml-gpu-workload-harness": {
+    "triggers": {
+      "positive_keywords": ["cuda/mps/cpu", "inference_mode()", "PyTorch"],
+      "negative_keywords": ["crud web"]
+    },
+    "cases": [
+      {
+        "id": "valid_portable_inference",
+        "kind": "clean_fp",
+        "files": {
+          ".gitignore": "*.pt\n",
+          "src/infer.py": "import torch\ndef predict(model, x, device):\n    with torch.inference_mode():\n        return model(x.to(device))\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/gpu_workload_auditor.py", "--root", ".", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["findings=0"]
+      },
+      {
+        "id": "invalid_cuda_and_missing_inference_mode",
+        "kind": "invalid",
+        "files": {".gitignore": "", "src/infer.py": "import torch\n# Runs on cpu fallback later\ndef predict(x):\n    \"\"\" mention cpu in docstring \"\"\"\n    return x.cuda()\n"},
+        "cmd": ["python3", "{SKILL}/scripts/gpu_workload_auditor.py", "--root", ".", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["missing-inference-mode", "hardcoded-cuda"]
+      },
+      {
+        "id": "valid_gpu_health_cpu_skip_and_mem_monitor_once",
+        "kind": "valid",
+        "cmd": ["bash", "-lc", "PATH=/usr/bin:/bin bash {SKILL}/scripts/gpu_health.sh && bash {SKILL}/scripts/mem_monitor.sh --samples 1 --interval 1"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["SKIP [missing-gpu]", "cgroup_gb"]
+      },
+      {
+        "id": "invalid_gpu_health_require_gpu_fails_without_nvidia",
+        "kind": "invalid",
+        "cmd": ["bash", "-lc", "PATH=/usr/bin:/bin bash {SKILL}/scripts/gpu_health.sh --require-gpu"],
+        "check_read_only": true,
+        "expect_rc": 2,
+        "expect_in": ["nvidia-smi not found"]
+      }
+    ]
+  },
+  "db-migration-and-schema-gate": {
+    "triggers": {
+      "positive_keywords": ["SQL schemas", "Alembic", "Drizzle ORM", "DROP TABLE"],
+      "negative_keywords": ["game shaders"]
+    },
+    "cases": [
+      {
+        "id": "valid_clean_additive_migration",
+        "kind": "clean_fp",
+        "files": {
+          "migrations/001_init.sql": "CREATE TABLE users (id SERIAL PRIMARY KEY, org_id INT NOT NULL REFERENCES orgs(id));\nCREATE INDEX CONCURRENTLY idx_users_org_id ON users (org_id);\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_sql_and_migrations.py", "--target", "migrations", "--require-concurrent-index"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["blocking=0"]
+      },
+      {
+        "id": "invalid_drop_and_not_null_without_default_blocked",
+        "kind": "invalid",
+        "files": {
+          "migrations/002_bad.sql": "ALTER TABLE users ADD COLUMN role TEXT NOT NULL;\nDROP TABLE legacy_audit;\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_sql_and_migrations.py", "--target", "migrations"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["destructive-ddl", "not-null-without-default"]
+      },
+      {
+        "id": "invalid_alembic_multiple_heads_caught",
+        "kind": "invalid",
+        "files": {
+          "alembic/versions/rev1.py": "revision = '0001'\ndown_revision = None\ndef upgrade(): pass\ndef downgrade(): op.create_table('x')\n",
+          "alembic/versions/rev2a.py": "revision = '0002a'\ndown_revision = '0001'\ndef upgrade(): pass\ndef downgrade(): op.create_table('y')\n",
+          "alembic/versions/rev2b.py": "revision = '0002b'\ndown_revision = '0001'\ndef upgrade(): pass\ndef downgrade(): op.create_table('z')\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_sql_and_migrations.py", "--target", "alembic"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["multiple-migration-heads"]
+      },
+      {
+        "id": "valid_drizzle_journal_check",
+        "kind": "valid",
+        "files": {
+          "drizzle/0000_init.sql": "CREATE TABLE items (id int);\n",
+          "drizzle/meta/_journal.json": {
+            "version": "7",
+            "dialect": "postgresql",
+            "entries": [{"idx": 0, "version": "7", "when": 1700000000000, "tag": "0000_init", "breakpoints": true}]
+          },
+          "drizzle/meta/0000_snapshot.json": {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "prevId": "00000000-0000-0000-0000-000000000000",
+            "version": "7",
+            "dialect": "postgresql",
+            "tables": {}
+          }
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_drizzle_migrations.py", "--migrations-dir", "drizzle", "--json"],
+        "check_read_only": true,
+        "expect_rc": 0
+      }
+    ]
+  },
+  "api-openapi-contract-gate": {
+    "triggers": {
+      "positive_keywords": ["OpenAPI 3.x", "Swagger", "pagination", "route parity"],
+      "negative_keywords": ["2D game art"]
+    },
+    "cases": [
+      {
+        "id": "valid_openapi_and_code_route_parity",
+        "kind": "clean_fp",
+        "files": {
+          "src/api.py": "from fastapi import APIRouter\nrouter = APIRouter()\n@router.get('/items')\ndef list_items(limit: int = 20):\n    return []\n",
+          "openapi.json": {
+            "openapi": "3.0.3",
+            "info": {"title": "Demo API", "version": "1.0.0"},
+            "paths": {
+              "/items": {
+                "get": {
+                  "parameters": [{"name": "limit", "in": "query"}],
+                  "responses": {
+                    "200": {"description": "ok", "content": {"application/json": {"schema": {"type": "array"}}}},
+                    "400": {"description": "bad request"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "cmd": ["python3", "{SKILL}/scripts/openapi_contract_gate.py", "--spec", "openapi.json", "--code-dir", "src"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["blocking=0"]
+      },
+      {
+        "id": "invalid_undocumented_route_and_unbounded_list",
+        "kind": "invalid",
+        "files": {
+          "src/api.py": "from fastapi import FastAPI\napp = FastAPI()\n@app.get('/items')\ndef list_items(): return []\n@app.post('/secret-route')\ndef hidden(): return {}\n",
+          "openapi.json": {
+            "openapi": "3.0.3",
+            "info": {"title": "Demo API", "version": "1.0.0"},
+            "paths": {
+              "/items": {
+                "get": {
+                  "responses": {
+                    "200": {"description": "ok", "content": {"application/json": {"schema": {"type": "array"}}}}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "cmd": ["python3", "{SKILL}/scripts/openapi_contract_gate.py", "--spec", "openapi.json", "--code-dir", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["unbounded-list-endpoint", "undocumented-route"]
+      },
+      {
+        "id": "malformed_missing_spec",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/openapi_contract_gate.py", "--spec", "missing_openapi.json"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "runtime-profiling-and-observability": {
+    "triggers": {
+      "positive_keywords": ["p50/p95", "cProfile", "tracemalloc", "observability"],
+      "negative_keywords": ["CSS styling"]
+    },
+    "cases": [
+      {
+        "id": "valid_py_script_profile_within_budget",
+        "kind": "valid",
+        "files": {"work.py": "x = sum(i * i for i in range(500))\n"},
+        "cmd": ["python3", "{SKILL}/scripts/profile_and_observability_gate.py", "profile", "--py-script", "work.py", "--runs", "2", "--max-p95-ms", "2000", "--max-peak-mb", "64"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["status=PASS"]
+      },
+      {
+        "id": "invalid_secret_leak_in_logs_blocked",
+        "kind": "invalid",
+        "files": {"src/auth.py": "import logging\nlogger = logging.getLogger(__name__)\ndef login(user: str, api_key: str) -> None:\n    logger.info('login %s key=%s', user, api_key)\n"},
+        "cmd": ["python3", "{SKILL}/scripts/profile_and_observability_gate.py", "audit-logs", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["secret-in-log"]
+      },
+      {
+        "id": "clean_structured_logs_pass",
+        "kind": "clean_fp",
+        "files": {"src/auth.py": "import logging\nlogger = logging.getLogger(__name__)\ndef login(user_id: str) -> None:\n    logger.info('user_authenticated', extra={'user_id': user_id})\n"},
+        "cmd": ["python3", "{SKILL}/scripts/profile_and_observability_gate.py", "audit-logs", "--target", "src"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["blocking=0"]
+      }
+    ]
+  }
+}

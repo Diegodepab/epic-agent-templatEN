@@ -1,0 +1,449 @@
+{
+  "long-context-state-manager": {
+    "triggers": {
+      "positive_keywords": ["current_state.md", "long-running", "goal drift"],
+      "negative_keywords": ["godot", "css"]
+    },
+    "cases": [
+      {
+        "id": "valid_init_and_update",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/state_manager.py", "init", "--objective", "Ship P0"],
+        "expect_rc": 0,
+        "expect_files": [".agents/current_state.md"],
+        "expect_in": ["Initialized"]
+      },
+      {
+        "id": "invalid_double_init_without_force",
+        "kind": "invalid",
+        "files": {".agents/current_state.md": "# Existing\n"},
+        "cmd": ["python3", "{SKILL}/scripts/state_manager.py", "init", "--objective", "Overwrite"],
+        "expect_rc": 1,
+        "expect_in": ["--force"]
+      },
+      {
+        "id": "malformed_missing_status",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/state_manager.py", "--state-file", "missing.md", "status"],
+        "expect_nonzero": true,
+        "forbid_in": ["PASS"]
+      }
+    ]
+  },
+  "anti-laziness-and-evidence-verifier": {
+    "triggers": {
+      "positive_keywords": ["stubs", "NotImplementedError", "exit code 0"],
+      "negative_keywords": ["spritesheet"]
+    },
+    "cases": [
+      {
+        "id": "valid_clean_and_cmd",
+        "kind": "valid",
+        "files": {"src/calc.py": "def compute_total(a: int, b: int) -> int:\n    return a + b\n"},
+        "cmd": ["python3", "{SKILL}/scripts/verify_completion.py", "--paths", "src/calc.py", "--cmd", "python3 -c \"print(42)\""],
+        "expect_rc": 0,
+        "expect_files": [".agents/verification_evidence.json"],
+        "expect_in": ["Gate 2: PASS", "VERIFIED"]
+      },
+      {
+        "id": "invalid_stub_caught",
+        "kind": "invalid",
+        "files": {"src/stub.py": "def compute_magic(x: int) -> int:\n    raise NotImplementedError()\n"},
+        "cmd": ["python3", "{SKILL}/scripts/verify_completion.py", "--paths", "src/stub.py", "--scan-only"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["not-implemented"]
+      },
+      {
+        "id": "invalid_ts_cs_empty_body_caught",
+        "kind": "invalid",
+        "files": {"src/Service.cs": "public class Service {\n    public void ProcessOrder(int id) { }\n}\n"},
+        "cmd": ["python3", "{SKILL}/scripts/verify_completion.py", "--paths", "src/Service.cs", "--scan-only"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["empty-body"]
+      },
+      {
+        "id": "clean_protocol_false_positive_guard",
+        "kind": "clean_fp",
+        "files": {"src/iface.py": "from typing import Protocol\nclass Store(Protocol):\n    def save(self, x: int) -> None: ...\n"},
+        "cmd": ["python3", "{SKILL}/scripts/verify_completion.py", "--paths", "src/iface.py", "--scan-only"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["findings=0"]
+      },
+      {
+        "id": "malformed_missing_path",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/verify_completion.py", "--paths", "does_not_exist.py", "--scan-only"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "repo-map-and-context-pack": {
+    "triggers": {
+      "positive_keywords": ["REPO_MAP.md", "signatures", "_reference/repos"],
+      "negative_keywords": ["blender"]
+    },
+    "cases": [
+      {
+        "id": "valid_symbol_map",
+        "kind": "valid",
+        "files": {"src/mod.py": "class Engine:\n    def tick(self, dt: float) -> None:\n        return None\n"},
+        "cmd": ["python3", "{SKILL}/scripts/repo_map.py", "--root", ".", "--out", ".agents/REPO_MAP.md"],
+        "expect_rc": 0,
+        "expect_files": [".agents/REPO_MAP.md"],
+        "expect_in": ["Generated .agents/REPO_MAP.md"]
+      },
+      {
+        "id": "malformed_missing_digest",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/repo_map.py", "--digest-reference", "missing_repo"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "architecture-knowledge-and-docs-sync": {
+    "triggers": {
+      "positive_keywords": ["knowledge graph", "ARCHITECTURE.md", "Mermaid"],
+      "negative_keywords": ["spritesheet"]
+    },
+    "cases": [
+      {
+        "id": "valid_docs_and_graph_sync",
+        "kind": "valid",
+        "files": {
+          "README.md": "# Demo\nSee [Architecture](docs/ARCHITECTURE.md).\n",
+          "AGENTS.md": "# Rules\nUse docs cleanly.\n",
+          "docs/USER_GUIDE.md": "# Guide\nRun make verify.\n",
+          "docs/ARCHITECTURE.md": "# Architecture\n<!-- ARCH_GRAPH:START -->\n<!-- ARCH_GRAPH:END -->\n",
+          "src/app.py": "def run() -> int:\n    return 1\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/sync_arch_graph.py", "--root", ".", "--write"],
+        "expect_rc": 0,
+        "expect_in": ["Updated", "ARCHITECTURE.md"]
+      },
+      {
+        "id": "invalid_broken_link_caught",
+        "kind": "invalid",
+        "files": {
+          "README.md": "# Demo\nBroken [link](docs/NOPE.md).\n",
+          "docs/ARCHITECTURE.md": "# Architecture\nValid.\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_docs_integrity.py", "--root", "."],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["broken-link"]
+      },
+      {
+        "id": "malformed_missing_root",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/audit_docs_integrity.py", "--root", "nonexistent_dir"],
+        "expect_nonzero": false,
+        "expect_in": ["findings=0"]
+      }
+    ]
+  },
+  "clean-code-and-architecture-gate": {
+    "triggers": {
+      "positive_keywords": ["dependency cycles", "Clean Architecture", "junk-drawer", "lossless markdown"],
+      "negative_keywords": ["shader visuals"]
+    },
+    "cases": [
+      {
+        "id": "valid_detect_stack_python",
+        "kind": "valid",
+        "files": {
+          "pyproject.toml": "[project]\nname = \"demo\"\nversion = \"0.1.0\"\n",
+          "src/app.py": "def run() -> int:\n    return 1\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/detect_stack.py", "--root", ".", "--json"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["Python", "pyproject.toml"]
+      },
+      {
+        "id": "valid_scan_and_map_structure",
+        "kind": "valid",
+        "files": {
+          "src/utils/misc.py": "def helper_v2() -> int:\n    # print('debug')\n    return 1\n"
+        },
+        "cmd": ["bash", "-lc", "python3 {SKILL}/scripts/scan_repo.py --root . --json && python3 {SKILL}/scripts/map_structure.py --root . --path src --json"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["junk_drawer"]
+      },
+      {
+        "id": "valid_inward_boundaries_pass",
+        "kind": "clean_fp",
+        "files": {
+          ".clean/architecture.md": "```clean-architecture\nlayer domain = src/domain/**\nlayer infra  = src/infra/**\n```\n",
+          "src/domain/order.py": "class Order:\n    pass\n",
+          "src/infra/repo.py": "from src.domain.order import Order\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_boundaries.py", "--root", ".", "--json"],
+        "check_read_only": true,
+        "expect_rc": 0
+      },
+      {
+        "id": "invalid_outward_boundary_violation_blocked",
+        "kind": "invalid",
+        "files": {
+          ".clean/architecture.md": "```clean-architecture\nlayer domain = src/domain/**\nlayer infra  = src/infra/**\n```\n",
+          "src/domain/order.py": "from src.infra.repo import save_order\n",
+          "src/infra/repo.py": "def save_order() -> None:\n    pass\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_boundaries.py", "--root", ".", "--json"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["domain", "infra"]
+      },
+      {
+        "id": "valid_lossless_compression",
+        "kind": "valid",
+        "files": {
+          "orig.md": "# Policy\nAlways enforce rule A1.\n```\npytest -q\n```\n",
+          "compact.md": "# Policy\nEnforce rule A1.\n```\npytest -q\n```\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_compression.py", "orig.md", "compact.md", "--json"],
+        "check_read_only": true,
+        "expect_rc": 0
+      },
+      {
+        "id": "invalid_lossy_compression_detected",
+        "kind": "invalid",
+        "files": {
+          "orig.md": "# Policy\nFollow rule A1 (`pytest -q`).\n",
+          "bad.md": "# Policy\nFollow general hygiene.\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_compression.py", "orig.md", "bad.md", "--json"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["A1"]
+      },
+      {
+        "id": "valid_shortcut_debt_and_lean_ledger",
+        "kind": "valid",
+        "files": {
+          "src/service.py": "def compute(x: int) -> int:\n    # shortcut: linear scan up to 100 items, revisit when cardinality > 1000\n    return x * 2\n\ndef legacy_compute(x: int) -> int:\n    return compute(x)\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_shortcuts_and_lean.py", "--root", ".", "--json"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["\"tag\": \"tracked\"", "passthrough-wrapper", "legacy_compute"]
+      },
+      {
+        "id": "invalid_shortcut_missing_trigger_blocked",
+        "kind": "invalid",
+        "files": {
+          "src/temp.py": "def hack() -> int:\n    # shortcut: hardcoded value\n    return 42\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_shortcuts_and_lean.py", "--root", ".", "--mode", "debt", "--strict-triggers"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["[no-trigger]"]
+      }
+    ]
+  },
+  "systematic-debugging-and-rca": {
+    "triggers": {
+      "positive_keywords": ["stacktraces", "failing-reproduction", "SHA-256 failure fingerprints", "test state polluters"],
+      "negative_keywords": ["logo"]
+    },
+    "cases": [
+      {
+        "id": "valid_parse_python_log",
+        "kind": "valid",
+        "files": {"crash.log": "Traceback (most recent call last):\n  File \"src/core.py\", line 14, in run\n    return 1 / 0\nZeroDivisionError: division by zero\n"},
+        "cmd": ["python3", "{SKILL}/scripts/triage_failure.py", "parse-log", "--log", "crash.log", "--json-out", "rca.json"],
+        "expect_rc": 0,
+        "expect_files": ["rca.json"],
+        "expect_in": ["python-traceback", "src/core.py:14"]
+      },
+      {
+        "id": "valid_verify_repro_fails_as_expected",
+        "kind": "valid",
+        "files": {"test_fail.py": "assert 1 == 2\n"},
+        "cmd": ["python3", "{SKILL}/scripts/triage_failure.py", "verify-repro", "--cmd", "python3 test_fail.py"],
+        "expect_rc": 0,
+        "expect_files": [".agents/rca_active.json"],
+        "expect_in": ["rca-repro-confirmed"]
+      },
+      {
+        "id": "invalid_passing_command_rejected_as_repro",
+        "kind": "invalid",
+        "cmd": ["python3", "{SKILL}/scripts/triage_failure.py", "verify-repro", "--cmd", "python3 -c \"print('ok')\""],
+        "expect_rc": 1,
+        "expect_in": ["exited 0"]
+      },
+      {
+        "id": "malformed_missing_log",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/triage_failure.py", "parse-log", "--log", "nope.log"],
+        "expect_nonzero": true
+      },
+      {
+        "id": "valid_fix_loop_fingerprint",
+        "kind": "valid",
+        "files": {
+          "attempt.json": {
+            "schema_version": 1,
+            "command": "pytest tests/test_core.py",
+            "input_digest": "sha256:abc",
+            "exit_code": 1,
+            "failure_class": "assertion-mismatch",
+            "stable_excerpt": "AssertionError: expected 2 got 1",
+            "real_path_state": "FAILING"
+          }
+        },
+        "cmd": ["python3", "{SKILL}/scripts/fingerprint.py", "attempt.json"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["sha256:"]
+      },
+      {
+        "id": "malformed_fingerprint_missing_field",
+        "kind": "malformed",
+        "files": {"bad_attempt.json": {"schema_version": 1}},
+        "cmd": ["python3", "{SKILL}/scripts/fingerprint.py", "bad_attempt.json"],
+        "expect_rc": 2
+      },
+      {
+        "id": "invalid_polluter_test_isolated",
+        "kind": "invalid",
+        "files": {
+          "tests/test_01_clean.py": "assert 1 == 1\n",
+          "tests/test_02_dirty.py": "open('leak.tmp', 'w').write('x')\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/find_polluter.py", "--artifact", "leak.tmp", "--glob", "tests/test_*.py", "--cmd-template", "python3 {file}"],
+        "expect_rc": 1,
+        "expect_in": ["POLLUTER_FOUND: tests/test_02_dirty.py"]
+      },
+      {
+        "id": "clean_tests_no_polluter",
+        "kind": "clean_fp",
+        "files": {
+          "tests/test_01_clean.py": "assert 1 == 1\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/find_polluter.py", "--artifact", "leak.tmp", "--glob", "tests/test_*.py", "--cmd-template", "python3 {file}"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["CLEAN:"]
+      }
+    ]
+  },
+  "skill-authoring-and-updater": {
+    "triggers": {
+      "positive_keywords": ["Scaffolds", "audits", "Decision Trees"],
+      "negative_keywords": ["playwright"]
+    },
+    "cases": [
+      {
+        "id": "valid_scaffold_and_strict_audit",
+        "kind": "valid",
+        "cmd": ["python3", "{SKILL}/scripts/scaffold_skill.py", "--name", "eval-demo", "--dest", ".", "--description", "Audits sample data deterministically. Use when testing scaffolds. Not for UI."],
+        "expect_rc": 0,
+        "expect_files": ["eval-demo/SKILL.md", "eval-demo/scripts/run.py"]
+      },
+      {
+        "id": "invalid_prompt_only_skill_blocked",
+        "kind": "invalid",
+        "files": {"bad-skill/SKILL.md": "---\nname: bad-skill\ndescription: Short.\n---\n# Bad\n"},
+        "cmd": ["python3", "{SKILL}/scripts/audit_skill.py", "bad-skill", "--strict"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["no-executable-scripts"]
+      },
+      {
+        "id": "malformed_missing_target",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/audit_skill.py", "missing_skill_dir"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "skill-radar-and-proposals": {
+    "triggers": {
+      "positive_keywords": ["last 30 days", "velocity", "reference repos"],
+      "negative_keywords": ["spritesheet"]
+    },
+    "cases": [
+      {
+        "id": "valid_local_propose",
+        "kind": "valid",
+        "files": {"_ref/sample/scripts/helper.py": "print(1)\n", "_ref/sample/SKILL.md": "---\nname: sample\n---\n"},
+        "cmd": ["python3", "{SKILL}/scripts/skill_radar.py", "propose", "--reference-dir", "_ref", "--catalog-dir", "{ROOT}/_catalog/skills"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["CANDIDATE_PORT"]
+      },
+      {
+        "id": "missing_network_offline_handling",
+        "kind": "missing_deps",
+        "cmd": ["env", "HTTPS_PROXY=http://127.0.0.1:9", "HTTP_PROXY=http://127.0.0.1:9", "https_proxy=http://127.0.0.1:9", "http_proxy=http://127.0.0.1:9", "python3", "{SKILL}/scripts/skill_radar.py", "discover"],
+        "expect_nonzero": true,
+        "forbid_in": ["PASS"]
+      },
+      {
+        "id": "malformed_missing_ref_dir",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/skill_radar.py", "propose", "--reference-dir", "no_such_dir"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "reference-harvest-and-prune": {
+    "triggers": {
+      "positive_keywords": ["prompt-only fluff", "safe to delete", "reference/"],
+      "negative_keywords": ["shader"]
+    },
+    "cases": [
+      {
+        "id": "valid_reconcile_fluff_repo",
+        "kind": "valid",
+        "files": {"ref/pure-prompts/prompts/SKILL.md": "---\nname: fluff\n---\nHello\n"},
+        "cmd": ["python3", "{SKILL}/scripts/audit_reference_harvest.py", "--ref", "ref", "--target", "{ROOT}", "--out", "-"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["SAFE_TO_DELETE"]
+      },
+      {
+        "id": "malformed_missing_ref_dir",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/audit_reference_harvest.py", "--ref", "missing_ref", "--target", "."],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "git-commit-and-pr-gate": {
+    "triggers": {
+      "positive_keywords": ["Conventional Commits", "SHA-pinned GitHub Actions", "secret leaks"],
+      "negative_keywords": ["pixel art"]
+    },
+    "cases": [
+      {
+        "id": "valid_commit_msg_and_action_pins",
+        "kind": "valid",
+        "files": {".github/workflows/ci.yml": "jobs:\n  t:\n    steps:\n      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4\n"},
+        "cmd": ["python3", "{SKILL}/scripts/commit_gate.py", "check-msg", "feat(core): add deterministic gate\n\nCore:\n- gate: add eval checks"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["PASS [commit-msg]"]
+      },
+      {
+        "id": "invalid_non_english_commit",
+        "kind": "invalid",
+        "cmd": ["python3", "{SKILL}/scripts/commit_gate.py", "check-msg", "fix: arregla el bug del sistema"],
+        "expect_rc": 1
+      },
+      {
+        "id": "invalid_unpinned_action_tag",
+        "kind": "invalid",
+        "files": {".github/workflows/bad.yml": "jobs:\n  t:\n    steps:\n      - uses: actions/checkout@v4\n"},
+        "cmd": ["bash", "{SKILL}/scripts/verify-action-pins.sh", "."],
+        "check_read_only": true,
+        "expect_rc": 1
+      }
+    ]
+  }
+}
