@@ -1,0 +1,60 @@
+# ==============================================================================
+# 1. Local Agent Reference & Scratch Sandbox (_reference/)
+# ==============================================================================
+# Two-stage Git lifecycle:
+# - Stage A (Template repo): Track _reference/AGENTS.md, _reference/SPEC.md, and
+#   empty repos/.gitkeep + assets/.gitkeep markers so cloning this template on any
+#   laptop or VM provides the reference workspace ready to use. Ignore anything else.
+# - Stage B (Initialized project): `init_project.py` runs `git rm --cached -r _reference/`
+#   and replaces this block with `_reference/` so private specs, cloned reference
+#   repos, and raw assets are 100% ignored in the target project's repository.
+_reference/*
+!_reference/AGENTS.md
+!_reference/SPEC.md
+!_reference/repos/
+_reference/repos/*
+!_reference/repos/.gitkeep
+!_reference/assets/
+_reference/assets/*
+!_reference/assets/.gitkeep
+
+# ==============================================================================
+# 2. Environment & Secrets
+# ==============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.*
+
+# ==============================================================================
+# 3. Universal Build, Coverage, Editor & OS Artifacts
+# ==============================================================================
+dist/
+build/
+out/
+coverage/
+tmp/
+*.log
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Agent Ephemeral State & Verification Evidence
+.agents/current_state.md
+.agents/state_history.jsonl
+.agents/verification_evidence.json
+.agents/REPO_MAP.md
+.agents/arch_graph.json
+.agents/SKILL_PROPOSALS.md
+.agents/radar_seen.json
+
+# ==============================================================================
+# 4. Stack-Specific Ignores (Populated from _catalog/stacks/*/gitignore.fragment)
+# ==============================================================================
