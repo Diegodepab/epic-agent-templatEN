@@ -1,0 +1,21 @@
+{
+  "window_days": 30,
+  "github_queries": [
+    "topic:agent-skills stars:>50",
+    "topic:semgrep-rules stars:>30",
+    "topic:ast-grep stars:>30",
+    "\"SKILL.md\" scripts python OR go OR typescript stars:>100"
+  ],
+  "hn_queries": [
+    "agent skills coding verification",
+    "static analysis ast-grep semgrep"
+  ],
+  "watched_repos": [
+    "alibaba/open-code-review",
+    "elementalsouls/Claude-BugHunter",
+    "mvanhorn/last30days-skill",
+    "google-labs-code/stitch-skills",
+    "ast-grep/ast-grep",
+    "returntocorp/semgrep"
+  ]
+}
