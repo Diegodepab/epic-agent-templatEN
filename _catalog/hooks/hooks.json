@@ -1,0 +1,17 @@
+{
+  "workspace-safety-guard": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "run_command|edit_file|write_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f ./hooks/pre_tool_guard.py ]; then python3 ./hooks/pre_tool_guard.py; else python3 .agents/hooks/pre_tool_guard.py; fi",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

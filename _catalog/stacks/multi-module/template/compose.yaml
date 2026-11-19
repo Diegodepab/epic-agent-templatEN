@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    profiles: ["dev", "prod"]
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-8000}:8000"
+    restart: unless-stopped
+
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: npm run dev -- --host
+    profiles: ["dev"]
+    ports:
+      - "5173:5173"

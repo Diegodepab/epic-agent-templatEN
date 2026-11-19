@@ -1,0 +1,17 @@
+# --- Multi-Module (Backend + Frontend) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+node_modules/
+.next/
+.astro/
+.turbo/
+*.tsbuildinfo
+lh-*.json
