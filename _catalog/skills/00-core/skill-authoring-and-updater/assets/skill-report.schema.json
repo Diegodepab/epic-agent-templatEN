@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Antigravity Skill Report Schema",
+  "type": "object",
+  "required": ["tool", "status", "summary", "findings"],
+  "properties": {
+    "tool": { "type": "string" },
+    "status": { "type": "string", "enum": ["PASS", "WARN", "FAIL"] },
+    "score": { "type": ["integer", "number", "null"], "minimum": 0, "maximum": 100 },
+    "grade": { "type": ["string", "null"], "enum": ["A", "B", "C", "D", "F", null] },
+    "summary": { "type": "object" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "rule", "detail"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] },
+          "rule": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": ["integer", "null"] },
+          "detail": { "type": "string" },
+          "fix_hint": { "type": "string" }
+        }
+      }
+    }
+  }
+}
