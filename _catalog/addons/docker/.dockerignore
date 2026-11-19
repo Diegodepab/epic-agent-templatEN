@@ -1,0 +1,52 @@
+# Non-runtime agent, reference, and template directories
+_reference/
+_catalog/
+.agents/
+.git/
+.github/
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Frontend build artifacts and reports
+node_modules/
+.next/
+lh-*.json
+
+# Tests and documentation
+tests/
+docs/
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
+
+# Markdown files (keep README.md if required by package metadata)
+*.md
+!README.md
+
+# Large ML weights, datasets, and experiment logs
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.ckpt
+checkpoints/
+data/
+wandb/
+mlruns/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+*.log

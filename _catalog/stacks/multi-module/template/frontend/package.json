@@ -1,0 +1,13 @@
+{
+  "name": "{{PROJECT_NAME}}-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Configure frontend dev script'",
+    "lint": "echo 'Configure frontend lint script'",
+    "format": "echo 'Configure frontend format script'",
+    "test": "node --test",
+    "build": "echo 'Configure frontend build script'"
+  }
+}

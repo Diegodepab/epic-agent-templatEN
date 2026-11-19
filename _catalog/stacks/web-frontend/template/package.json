@@ -1,0 +1,13 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Configure framework dev command (e.g. vite dev, next dev, astro dev)'",
+    "lint": "echo 'Configure linter/typecheck (eslint / svelte-check / tsc)'",
+    "format": "echo 'Configure prettier format script'",
+    "test": "node --test",
+    "build": "echo 'Configure production build step'"
+  }
+}

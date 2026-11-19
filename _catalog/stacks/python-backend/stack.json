@@ -1,0 +1,33 @@
+{
+  "name": "python-backend",
+  "description": "Layered Python 3.12+ backend/API service with Docker, dotenv, and clean-architecture boundaries",
+  "primary_code_dir": "src/",
+  "prerequisite": "Python 3.12+, uv, and Docker (optional)",
+  "rules": ["python-standards.md", "docker-and-env.md"],
+  "src_agents_rules": [
+    {"source": "backend-layered-src-agents.md", "dest": "src/AGENTS.md"}
+  ],
+  "addons": {
+    "docker": true,
+    "dotenv_profiles": ["core", "web-api"]
+  },
+  "supports_ui_profile": false,
+  "optional_features": {
+    "brand-logo": "frontend/brand-logo-and-svg-forge",
+    "logo": "frontend/brand-logo-and-svg-forge"
+  },
+  "skills": [
+    "00-core/long-context-state-manager",
+    "00-core/anti-laziness-and-evidence-verifier",
+    "00-core/repo-map-and-context-pack",
+    "00-core/architecture-knowledge-and-docs-sync",
+    "00-core/clean-code-and-architecture-gate",
+    "00-core/systematic-debugging-and-rca",
+    "github/git-commit-and-pr-gate",
+    "backend/backend-quality-and-contracts",
+    "backend/backend-security-and-owasp-gate",
+    "backend/api-openapi-contract-gate",
+    "testing/test-and-mutation-gate",
+    "infra/docker-and-env-auditor"
+  ]
+}

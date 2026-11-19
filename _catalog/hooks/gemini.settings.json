@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "run_shell_command|write_file|replace",
+        "hooks": [
+          {
+            "name": "workspace-safety-guard",
+            "type": "command",
+            "command": "python3 .agents/hooks/pre_tool_guard.py --dialect gemini",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+# --- Python, ML Weights, Datasets & Experiment Logs ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.ckpt
+*.h5
+*.bin
+checkpoints/
+models/weights/
+data/raw/
+data/processed/
+wandb/
+mlruns/
+outputs/
+.ipynb_checkpoints/

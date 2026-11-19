@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .agents/hooks/pre_tool_guard.py --dialect claude",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

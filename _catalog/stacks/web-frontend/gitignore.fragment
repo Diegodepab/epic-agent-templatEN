@@ -1,0 +1,13 @@
+# --- Node / Web Frontend / Lighthouse ---
+node_modules/
+.next/
+.nuxt/
+.astro/
+.svelte-kit/
+.turbo/
+.vercel/
+*.tsbuildinfo
+lh-*.json
+.lighthouseci/
+playwright-report/
+test-results/

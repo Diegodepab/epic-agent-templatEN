@@ -1,0 +1,29 @@
+{
+  "name": "ml-gpu",
+  "description": "Python 3.12+ Machine Learning & GPU inference/training pipeline portable across CPU/MPS laptops and CUDA VMs",
+  "primary_code_dir": "src/",
+  "prerequisite": "Python 3.12+, uv, Docker (optional NVIDIA Container Toolkit on GPU VM)",
+  "rules": ["python-standards.md", "docker-and-env.md"],
+  "src_agents_rules": [],
+  "addons": {
+    "docker": true,
+    "dotenv_profiles": ["core", "gpu-ml"]
+  },
+  "supports_ui_profile": false,
+  "default_doc_level": "full",
+  "skills": [
+    "00-core/long-context-state-manager",
+    "00-core/anti-laziness-and-evidence-verifier",
+    "00-core/repo-map-and-context-pack",
+    "00-core/architecture-knowledge-and-docs-sync",
+    "00-core/clean-code-and-architecture-gate",
+    "00-core/systematic-debugging-and-rca",
+    "github/git-commit-and-pr-gate",
+    "backend/backend-quality-and-contracts",
+    "backend/backend-security-and-owasp-gate",
+    "testing/test-and-mutation-gate",
+    "infra/docker-and-env-auditor",
+    "infra/ml-gpu-workload-harness",
+    "testing/runtime-profiling-and-observability"
+  ]
+}
