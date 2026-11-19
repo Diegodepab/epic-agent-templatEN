@@ -11,13 +11,13 @@
 # epic-agent-templatEN
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://www.python.org/)
-[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-33%20Script--Backed-111827.svg)](TEMPLATE_GUIDE.md)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-36%20Script--Backed-111827.svg)](TEMPLATE_GUIDE.md)
 [![Gemini Ready](https://img.shields.io/badge/Google%20Antigravity-Gemini%20Native-4285F4.svg)](TEMPLATE_GUIDE.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
 ## Project Overview
 
-**epic-agent-templatEN** is a modular agent-first project template with an interactive bootstrapper that prunes **33 deterministic engineering, frontend, and gamedev skills** to fit your exact stack. Engineered natively for **Google Antigravity (Gemini)** and open Agent Skills hosts, every skill follows progressive disclosure (`SKILL.md` with third-person triggers, Decision Trees, and black-box `--help` scripts) and ships deterministic Python/Node/Bash tooling instead of hollow prompts.
+**epic-agent-templatEN** is a modular agent-first project template with an interactive bootstrapper that prunes **36 deterministic engineering, frontend, research, and gamedev skills** to fit your exact stack (for greenfield projects or non-destructive brownfield adoption via `--adopt`). Engineered natively for **Google Antigravity (Gemini)** and open Agent Skills hosts, every skill follows progressive disclosure (`SKILL.md` with third-person triggers, Decision Trees, and black-box `--help` scripts) and ships deterministic Python/Node/Bash tooling instead of hollow prompts.
 
 Key capabilities designed for real engineering and game development:
 1. **Live Knowledge Graph (`docs/ARCHITECTURE.md`):** `sync_arch_graph.py` extracts AST functional blocks, public exports, and dependency edges into Mermaid + tables, giving both humans and Gemini a zero-bloat navigation map even on large repos.
@@ -31,7 +31,7 @@ Key capabilities designed for real engineering and game development:
 epic-agent-templatEN/
 ├── AGENTS.md                   # Bilingual engineering rules & zero-duplication doc matrix
 ├── Makefile                    # Universal entrypoint (help, setup, dev, lint, format, test, verify)
-├── TEMPLATE_GUIDE.md           # Full flag, stack, and 33-skill reference (auto-removed on init)
+├── TEMPLATE_GUIDE.md           # Full flag, stack, and 36-skill reference (auto-removed on init)
 ├── init_project.py             # 5-step modular questionnaire, spec router & auto-cleaner (auto-removed on init)
 ├── evals/                      # Reproducible functional eval suite across all 33 skills (auto-removed)
 ├── .agents/                    # Always-on quality rules, hooks & active 1-level workspace skills
@@ -88,15 +88,18 @@ python3 init_project.py --stack gamedev-godot --dim 2d --name my-2d-game --yes
 # Or initialize straight from your checkboxes in _reference/SPEC.md
 python3 init_project.py --from-spec _reference/SPEC.md --name my-project --yes
 
-# Or compose modularly by scope (API + DB + split CPU/GPU topology + selected docs)
-python3 init_project.py --code-style clean-ddd --scope api,db,ml-gpu --infra split-cpu-gpu --docs user-guide,agent-guide --name my-service --yes
+# Or compose modularly by scope (API + ML/GPU + scientific research + split CPU/GPU topology)
+python3 init_project.py --code-style clean-ddd --scope api,ml-gpu,research --infra split-cpu-gpu --docs user-guide,agent-guide --name my-research-service --yes
 
-# Or inspect all 33 skills and cherry-pick manually
+# Or adopt non-destructively into an existing repository (injects .agents/, hooks, rules & size ratchet)
+python3 init_project.py --adopt /path/to/existing-repo --scope api,ml-gpu,profiling,research --infra split-cpu-gpu --yes
+
+# Or inspect all 36 skills and cherry-pick manually
 python3 init_project.py --list-catalog
 ```
 
 <details>
-<summary>Catalog Summary: All 33 Gemini-Optimized Executable Skills (Click to Expand)</summary>
+<summary>Catalog Summary: All 36 Gemini-Optimized Executable Skills (Click to Expand)</summary>
 
 Every skill follows progressive disclosure, `## Decision Tree` routing, black-box `--help` execution, and zero pure-prompt fluff. See [Template Guide](TEMPLATE_GUIDE.md) for every script and CLI flag.
 
@@ -108,6 +111,7 @@ Every skill follows progressive disclosure, `## Decision Tree` routing, black-bo
 - **`github/` (1):** `git-commit-and-pr-gate`
 - **`testing/` (2):** `test-and-mutation-gate`, `runtime-profiling-and-observability`
 - **`infra/` (2):** `docker-and-env-auditor`, `ml-gpu-workload-harness`
+- **`research/` (3, Opt-In `--scope research`):** `research-paper-and-literature`, `research-rigor-and-experiments`, `research-manuscript-and-prose-gate`
 
 </details>
 
@@ -115,7 +119,7 @@ Every skill follows progressive disclosure, `## Decision Tree` routing, black-bo
 
 | Document | Link | Primary Purpose |
 | :--- | :--- | :--- |
-| **Template & CLI Guide** | [Template Guide](TEMPLATE_GUIDE.md) | Complete reference of flags, 6 stacks, 5 steps, and 33 skills (auto-removed on init) |
+| **Template & CLI Guide** | [Template Guide](TEMPLATE_GUIDE.md) | Complete reference of flags, 6 stacks, 5 steps, `--adopt`, and 36 skills (auto-removed on init) |
 | **Guía en Español** | [Español](docs/README.es.md) | Resumen del sistema y flujo de uso en español |
 | **System Architecture** | [Architecture](docs/ARCHITECTURE.md) | Central knowledge graph (`ARCH_GRAPH`) & module boundaries |
 | **User Guide** | [User Guide](docs/USER_GUIDE.md) | Environment setup, `make` interface, and troubleshooting |

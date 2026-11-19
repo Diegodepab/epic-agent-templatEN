@@ -242,6 +242,20 @@
         "check_read_only": true,
         "expect_rc": 1,
         "expect_in": ["[no-trigger]"]
+      },
+      {
+        "id": "valid_and_invalid_size_ratchet_enforcement",
+        "kind": "invalid",
+        "files": {
+          "src/legacy.py": "x = 1\n"
+        },
+        "cmd": [
+          "bash",
+          "-lc",
+          "python3 -c \"from pathlib import Path; Path('src/legacy.py').write_text('x = 1\\n' * 400)\" && python3 {SKILL}/scripts/size_ratchet.py --root . --init && python3 {SKILL}/scripts/size_ratchet.py --root . && python3 -c \"from pathlib import Path; Path('src/legacy.py').write_text('x = 1\\n' * 405)\" && python3 {SKILL}/scripts/size_ratchet.py --root ."
+        ],
+        "expect_rc": 1,
+        "expect_in": ["baseline written", "exceeds cap 400L"]
       }
     ]
   },

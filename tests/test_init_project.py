@@ -58,7 +58,7 @@ class TemplateInitEndToEndTests(unittest.TestCase):
         proc_cat = _run(["python3", "init_project.py", "--list-catalog"], TEMPLATE_ROOT)
         self.assertEqual(proc_cat.returncode, 0)
         catalog = json.loads(proc_cat.stdout)
-        self.assertEqual(len(catalog["skills"]), 33)
+        self.assertEqual(len(catalog["skills"]), 36)
 
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "dry_copy"
@@ -317,6 +317,72 @@ class TemplateInitEndToEndTests(unittest.TestCase):
         pin_script = TEMPLATE_ROOT / "_catalog/skills/github/git-commit-and-pr-gate/scripts/verify-action-pins.sh"
         res = _run(["bash", str(pin_script), str(TEMPLATE_ROOT)], TEMPLATE_ROOT)
         self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+
+    def test_research_scope_brownfield_adopt_and_hardened_guard(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            t = Path(tmp)
+            # 1. Greenfield --scope api,ml-gpu,research installs all 3 research skills + BENCHMARKS.md
+            res_proj = self._init_copy(
+                t,
+                None,
+                ["--scope", "api,ml-gpu,research"],
+                "proj_research",
+            )
+            res_skills = {p.name for p in (res_proj / ".agents/skills").iterdir() if p.is_dir()}
+            self.assertIn("research-paper-and-literature", res_skills)
+            self.assertIn("research-rigor-and-experiments", res_skills)
+            self.assertIn("research-manuscript-and-prose-gate", res_skills)
+            self.assertTrue((res_proj / "docs/BENCHMARKS.md").is_file())
+
+            # 2. Brownfield --adopt preserves existing README/AGENTS/src and initializes size-ratchet.json
+            existing = t / "legacy_repo"
+            (existing / "src").mkdir(parents=True)
+            (existing / "README.md").write_text("# Legacy README\nKeep intact.\n", encoding="utf-8")
+            (existing / "AGENTS.md").write_text("# Existing Agents\nKeep intact.\n", encoding="utf-8")
+            (existing / "src/big_legacy.py").write_text("x = 1\n" * 410, encoding="utf-8")
+            adopt_res = _run(
+                [
+                    "python3",
+                    "-B",
+                    str(TEMPLATE_ROOT / "init_project.py"),
+                    "--adopt",
+                    str(existing),
+                    "--scope",
+                    "api,ml-gpu,research",
+                    "--infra",
+                    "split-cpu-gpu",
+                    "--yes",
+                ],
+                t,
+            )
+            self.assertEqual(adopt_res.returncode, 0, adopt_res.stdout + adopt_res.stderr)
+            self.assertEqual((existing / "README.md").read_text(encoding="utf-8"), "# Legacy README\nKeep intact.\n")
+            self.assertEqual((existing / "AGENTS.md").read_text(encoding="utf-8"), "# Existing Agents\nKeep intact.\n")
+            self.assertTrue((existing / "AGENTS.template.md").is_file())
+            self.assertNotIn("TEMPLATE_BOOTSTRAP_INTERVIEW", (existing / "AGENTS.template.md").read_text(encoding="utf-8"))
+            self.assertTrue((existing / ".agents/skills/research-rigor-and-experiments").is_dir())
+            self.assertTrue((existing / ".agents/rules/infra-topology.md").is_file())
+            ratchet = json.loads((existing / ".agents/size-ratchet.json").read_text(encoding="utf-8"))
+            self.assertEqual(ratchet["caps"].get("src/big_legacy.py"), 410)
+            # Template catalog remains untouched
+            self.assertTrue((TEMPLATE_ROOT / "_catalog/catalog.json").is_file())
+
+            # 3. Hardened pre_tool_guard.py asks on git push main and .env / *.db writes, allows .env.example
+            guard = existing / ".agents/hooks/pre_tool_guard.py"
+            for payload, expected in [
+                ({"toolCall": {"name": "run_command", "args": {"CommandLine": "git push origin main"}}}, "ask"),
+                ({"toolCall": {"name": "edit_file", "args": {"Path": ".env"}}}, "ask"),
+                ({"toolCall": {"name": "write_file", "args": {"Path": "models/users.db"}}}, "ask"),
+                ({"toolCall": {"name": "edit_file", "args": {"Path": ".env.example"}}}, "allow"),
+            ]:
+                p = subprocess.run(
+                    ["python3", "-B", str(guard)],
+                    input=json.dumps(payload),
+                    text=True,
+                    capture_output=True,
+                    check=True,
+                )
+                self.assertEqual(json.loads(p.stdout)["decision"], expected, f"Failed for {payload}: {p.stdout}")
 
 
 if __name__ == "__main__":

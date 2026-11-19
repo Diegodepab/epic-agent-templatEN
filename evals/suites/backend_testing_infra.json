@@ -160,6 +160,12 @@
         "cmd": ["python3", "{SKILL}/scripts/with_server.py", "--server", "python3 -m http.server 19451", "--port", "19451", "--", "python3", "-c", "print('srv_up')"],
         "expect_rc": 0,
         "expect_in": ["srv_up"]
+      },
+      {
+        "id": "malformed_sabotage_missing_invariants",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/sabotage_check.py", "missing_invariants.yaml", "--python", "python3"],
+        "expect_nonzero": true
       }
     ]
   },

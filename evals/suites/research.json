@@ -1,0 +1,129 @@
+{
+  "research-paper-and-literature": {
+    "triggers": {
+      "positive_keywords": ["quotes.verify.json", "synthesis.md", "open-access PDFs"],
+      "negative_keywords": ["web scraping", "code formatting"]
+    },
+    "cases": [
+      {
+        "id": "valid_verified_synthesis_pass",
+        "kind": "clean_fp",
+        "files": {
+          "rev/papers/smith2025/quotes.md": "### Q1\n- page: 4\n> \"Accuracy reached 96.9 percent across five folds.\"\n",
+          "rev/papers/smith2025/quotes.verify.json": "{\"quotes\": [{\"id\": \"Q1\", \"verified\": true}], \"failures\": [], \"notes\": {\"checked\": true, \"cited_but_missing\": [], \"cited_but_unverified\": [], \"numbers_not_in_quotes\": []}}\n",
+          "rev/papers/smith2025/notes.md": "# Notes\nVerified baseline.\n",
+          "rev/synthesis.md": "# Synthesis\n\n## Answers\n\nSmith et al. reported strong cross-validation accuracy [@smith2025, p. 4, Q1].\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_synthesis.py", "rev"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["errors: 0"]
+      },
+      {
+        "id": "invalid_uncited_claim_and_blocked_paper_rejected",
+        "kind": "invalid",
+        "files": {
+          "rev/papers/blocked2025/ACCESS_BLOCKED.md": "Paywalled.\n",
+          "rev/synthesis.md": "# Synthesis\n\n## Answers\n\nThis model beats every prior baseline without needing any verified quote.\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_synthesis.py", "rev"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["uncited sentence"]
+      },
+      {
+        "id": "malformed_missing_review_dir",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/check_synthesis.py", "missing_review_dir"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "research-rigor-and-experiments": {
+    "triggers": {
+      "positive_keywords": ["data leakage", "inference_mode", "statistical tests", "ablations"],
+      "negative_keywords": ["CSS styling", "2D game sprites"]
+    },
+    "cases": [
+      {
+        "id": "valid_clean_experiment_pass",
+        "kind": "clean_fp",
+        "files": {
+          "exp/run.py": "import random\nimport torch\n\ndef set_seeds():\n    random.seed(42)\n    torch.manual_seed(42)\n\ndef train_step(loss):\n    loss.backward()\n\ndef evaluate(model, x):\n    model.eval()\n    with torch.inference_mode():\n        return model(x)\n",
+          "exp/claims.md": "Our method outperforms baseline by 3.2% (Table 1, [@smith2025, p. 4, Q1]).\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_research_rigor.py", "--target", "exp", "--claims", "exp/claims.md", "--strict"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["status=PASS"]
+      },
+      {
+        "id": "invalid_pre_split_leakage_and_uncited_claim_caught",
+        "kind": "invalid",
+        "files": {
+          "exp/leaky.py": "from sklearn.preprocessing import StandardScaler\nfrom sklearn.model_selection import train_test_split\n\ndef run(X, y):\n    scaler = StandardScaler()\n    X_scaled = scaler.fit_transform(X)\n    return train_test_split(X_scaled, y)\n",
+          "exp/claims.md": "Our model significantly outperforms all state-of-the-art methods.\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/audit_research_rigor.py", "--target", "exp", "--claims", "exp/claims.md", "--strict"],
+        "check_read_only": true,
+        "expect_rc": 1,
+        "expect_in": ["pre-split-fit-leakage", "unsupported-research-claim"]
+      },
+      {
+        "id": "malformed_missing_target",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/audit_research_rigor.py", "--target", "no_such_dir"],
+        "expect_nonzero": true
+      }
+    ]
+  },
+  "research-manuscript-and-prose-gate": {
+    "triggers": {
+      "positive_keywords": ["BibTeX", "numbers.md", "stylometric", "colour-blind"],
+      "negative_keywords": ["React/CSS", "2D game sprites"]
+    },
+    "cases": [
+      {
+        "id": "valid_latex_section_and_cvd_palette_pass",
+        "kind": "clean_fp",
+        "files": {
+          "refs.bib": "@article{smith2025,\n  title={Test},\n  year={2025}\n}\n",
+          "numbers.md": "| ID | Value | Source |\n|---|---|---|\n| acc_main | 96.9 | run-01 |\n",
+          "sec.tex": "\\section{Results}\nOur model reaches 96.9\\% accuracy~\\cite{smith2025}.\n"
+        },
+        "cmd": ["bash", "-lc", "python3 {SKILL}/scripts/check_section.py --tex sec.tex --bib refs.bib --numbers numbers.md && python3 {SKILL}/scripts/check_figure_pdf.py --palette '#4477AA,#EE6677,#228833'"],
+        "check_read_only": true,
+        "expect_rc": 0,
+        "expect_in": ["status=PASS"]
+      },
+      {
+        "id": "invalid_missing_bib_key_and_cvd_collision_caught",
+        "kind": "invalid",
+        "files": {
+          "refs.bib": "@article{known2025,\n  title={Known},\n  year={2025}\n}\n",
+          "sec.tex": "\\section{Results}\nWe cite a ghost paper~\\cite{ghost2099}.\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/check_section.py", "--tex", "sec.tex", "--bib", "refs.bib"],
+        "check_read_only": true,
+        "expect_rc": 1
+      },
+      {
+        "id": "valid_stylometry_compare_preserves_numbers",
+        "kind": "valid",
+        "files": {
+          "v1.md": "In this experiment we evaluated 42 samples across 5 folds and achieved 96.9 accuracy with stable variance across runs. The method remains deterministic and reproducible under fixed seeds.\n",
+          "v2.md": "We tested 42 samples over 5 folds and measured 96.9 accuracy with stable variance. Fixed seeds keep every run deterministic and reproducible.\n"
+        },
+        "cmd": ["python3", "{SKILL}/scripts/stylometry.py", "--compare", "v1.md", "v2.md"],
+        "check_read_only": true,
+        "expect_rc": 0
+      },
+      {
+        "id": "malformed_bad_hex_palette",
+        "kind": "malformed",
+        "cmd": ["python3", "{SKILL}/scripts/check_figure_pdf.py", "--palette", "not-a-hex"],
+        "expect_nonzero": true
+      }
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-# Template Usage Guide (`init_project.py` & 33-Skill Catalog)
+# Template Usage Guide (`init_project.py` & 36-Skill Catalog)
 
 > Visible in the public template repository on GitHub and **automatically deleted** by `init_project.py` (alongside `_catalog/`, `evals/`, `docs/assets/brand/`, `tests/test_init_project.py`, and `init_project.py`) once a child project is initialized.
 
@@ -30,7 +30,8 @@ python3 init_project.py --list-catalog
 | :--- | :--- | :--- |
 | `--code-style` | `minimal-yagni` (default) \| `clean-ddd` \| `functional-dod` | Injects `.agents/rules/code-philosophy.md` (Step 1) |
 | `--kind` (`--nature`) | `app-system` \| `library-cli` \| `game` | High-level project nature when composing via `--scope` (Step 2a) |
-| `--scope` | Comma-separated: `frontend,api,db,ml-gpu,profiling` | Composes exact skills, `.env.example`, and `device.py` per active area (`db` -> `db-migration-and-schema-gate`, `api` -> `api-openapi-contract-gate`) (Step 2b) |
+| `--scope` | Comma-separated: `frontend,api,db,ml-gpu,profiling,research` | Composes exact skills, `.env.example`, and `device.py` per active area (`research` -> 3 scientific paper/rigor/manuscript skills) (Step 2b) |
+| `--adopt` | `/path/to/existing-repo` | Brownfield mode: non-destructively injects `.agents/` skills, rules, hooks, safe `AGENTS.md` & `.agents/size-ratchet.json` without overwriting existing source/docs |
 | `--infra` | `single-node` (default) \| `split-cpu-gpu` | Multi-machine topology emitting `app-cpu`/`db`/`gpu-worker` Compose profiles, `REMOTE_WORKER_URL`, and `.agents/rules/infra-topology.md` (Step 2c) |
 | `--stack` | `web-frontend`, `python-cli`, `python-backend`, `multi-module`, `ml-gpu`, `gamedev-godot` | Selects stack manifest under `_catalog/stacks/<stack>/stack.json` |
 | `--from-spec` | e.g. `_reference/SPEC.md` | Parses `[x]` checkboxes across all 5 setup steps |
@@ -38,7 +39,7 @@ python3 init_project.py --list-catalog
 | `--dim` | `2d` (default) \| `3d` | Game dimension for `gamedev-godot` (`2d` strictly blocks 3D skills) (Step 4) |
 | `--ui-style` (`--ui-profile`) | `minimalist` (default), `neobrutalist`, `bento`, `glassmorphic`, `enterprise`, `editorial`, `terminal`, `fluid` | Selects aesthetic tokens/lint (`ui-design-tokens-and-presets` or `ui-fluid-novel-system`), writes `.agents/rules/ui-aesthetic.md`, and initializes `.agents/ui-contract.json` (Step 3a) |
 | `--ui-tone` | `dark` \| `light` | Polarity for `minimalist` (`dark` Retriever charcoal `#141517` or `light` bone `#F7F6F2`); runs `preset_tokens.py` on init (Step 3b) |
-| `--with-dataviz` / `--with-brand-logo` / `--with-profiling` | Flags | Opt-in toggles for `frontend-dataviz-and-charts`, `brand-logo-and-svg-forge`, and `runtime-profiling-and-observability` |
+| `--with-dataviz` / `--with-brand-logo` / `--with-profiling` / `--with-research` | Flags | Opt-in toggles for `frontend-dataviz-and-charts`, `brand-logo-and-svg-forge`, `runtime-profiling-and-observability`, and the 3 `research/` skills |
 | `--docs` | `user-guide,adr,agent-guide,benchmarks,es` (or `en` \| `bilingual`) | Granular optional documentation selection on top of mandatory `README.md` + `docs/ARCHITECTURE.md` (Step 5) |
 | `--doc-level` | `minimal` \| `standard` (default) \| `full` | Preset shortcuts for `--docs` and `.agents/rules/docs-discipline.md` |
 | `--agents` | `all` (default) \| `antigravity` \| `gemini` \| `claude` | Emits hooks (`pre_tool_guard.py`), `.gemini/settings.json`, `.claude/settings.json`, symlinks, and `GEMINI.md`/`CLAUDE.md` |
@@ -66,7 +67,7 @@ Every skill in `_catalog/skills/` complies with `audit_skill.py --strict --verif
 
 ---
 
-## 3. Complete Catalog of the 33 Executable Skills
+## 3. Complete Catalog of the 36 Executable Skills
 
 | # | Category | Skill (`name`) | Scope / Dim | Executable Engine (`scripts/`) | Concrete Output / Gate |
 | :-: | :--- | :--- | :--- | :--- | :--- |
@@ -74,7 +75,7 @@ Every skill in `_catalog/skills/` complies with `audit_skill.py --strict --verif
 | 2 | `00-core` | `anti-laziness-and-evidence-verifier` | Universal (`any`) | `verify_completion.py` | AST No-Stubbing scanner (Py/TS/C# + `ast-grep`) + `--cmd` runner (`exit=0`) |
 | 3 | `00-core` | `repo-map-and-context-pack` | Universal (`any`) | `repo_map.py` | AST/TS/C# symbol map (`.agents/REPO_MAP.md`) + `--digest-reference` |
 | 4 | `00-core` | `architecture-knowledge-and-docs-sync` | Universal (`any`) | `sync_arch_graph.py`, `audit_docs_integrity.py` | Live `ARCH_GRAPH` Mermaid/table sync + `--check-drift` + doc integrity |
-| 5 | `00-core` | `clean-code-and-architecture-gate` | Universal (`any`) | `detect_stack.py`, `scan_repo.py`, `map_structure.py`, `check_boundaries.py`, `check_compression.py`, `audit_shortcuts_and_lean.py` | Multi-language (21 langs) smells, cycles, dead code, DDD layers, `# shortcut:` ledger/Lean metrics & 14 classic books `.nano.md` |
+| 5 | `00-core` | `clean-code-and-architecture-gate` | Universal (`any`) | `detect_stack.py`, `scan_repo.py`, `size_ratchet.py`, `map_structure.py`, `check_boundaries.py`, `check_compression.py`, `audit_shortcuts_and_lean.py` | Multi-language (21 langs) smells, legacy size ratchet, cycles, dead code, DDD layers, `# shortcut:` ledger/Lean metrics & 14 classic books `.nano.md` |
 | 6 | `00-core` | `systematic-debugging-and-rca` | Universal (`any`) | `triage_failure.py`, `fingerprint.py`, `find_polluter.py` | Stacktrace triage, failing-repro gate, fix-loop hashes & test polluter isolation |
 | 7 | `00-core` | `skill-authoring-and-updater` | Meta (`opt-in`) | `audit_skill.py`, `scaffold_skill.py` | Enforces Gemini v2 `SKILL.md` + `--verify-help` (`--strict`) |
 | 8 | `00-core` | `skill-radar-and-proposals` | Meta (`opt-in`) | `skill_radar.py` | Last-30-days velocity discovery + local reference matcher |
@@ -90,7 +91,7 @@ Every skill in `_catalog/skills/` complies with `audit_skill.py --strict --verif
 | 18 | `backend` | `backend-security-and-owasp-gate` | Scope `api`/`db`/CLI | `security_gate.py`, `dependency_scanner.py`, `injection_scanner.py`, `secrets_scanner.py`, `scope.py` | Redacted secrets, SQLi/XSS/SSRF injection & secret entropy scanners, file scope resolver, OWASP AST, deps/Dockerfiles + `bandit`/`semgrep` |
 | 19 | `backend` | `api-openapi-contract-gate` | Scope `api` | `openapi_contract_gate.py` | OpenAPI 3.x/Swagger response schemas, list pagination & FastAPI/Flask/Express route parity |
 | 20 | `backend` | `db-migration-and-schema-gate` | Scope `db` ONLY | `audit_sql_and_migrations.py`, `check_drizzle_migrations.py` | Blocks `DROP`/`TRUNCATE`, `NOT NULL` without `DEFAULT`, unindexed FKs, Alembic split heads & Drizzle conflicts |
-| 21 | `testing` | `test-and-mutation-gate` | Web / Backend / CLI | `test_audit.py`, `with_server.py` | Ghost-test AST detector + `mutmut`/`stryker` wrapper + E2E server manager |
+| 21 | `testing` | `test-and-mutation-gate` | Web / Backend / CLI | `test_audit.py`, `sabotage_check.py`, `with_server.py` | Ghost-test AST detector, targeted invariant sabotage (`tests/invariants.yaml`), `mutmut`/`stryker` wrapper & E2E server manager |
 | 22 | `testing` | `runtime-profiling-and-observability` | Scope `ml-gpu`/`profiling` | `profile_and_observability_gate.py` | p50/p95 latency, `cProfile` hotspots, `tracemalloc` memory budgets & secret-in-log audit |
 | 23 | `infra` | `docker-and-env-auditor` | Docker / `split-cpu-gpu` | `docker_env_linter.py` | Code <-> `.env.example` sync + `Dockerfile`/Compose + `hadolint` |
 | 24 | `infra` | `ml-gpu-workload-harness` | Scope `ml-gpu` | `gpu_workload_auditor.py`, `gpu_health.sh`, `mem_monitor.sh` | Model weight ignore guard, GPU/VRAM & RSS telemetry scripts + AST-verified `cpu/mps/cuda` + `inference_mode()` |
@@ -103,3 +104,6 @@ Every skill in `_catalog/skills/` complies with `audit_skill.py --strict --verif
 | 31 | `gamedev` | `godot-2d-autotile-and-parallax` | Godot (`2d`) | `autotile_seam_builder.py`, `autotile_build.py`, `layout_build.py`, `validate_layout.py`, `forge_nav.py`, `parallax_build.py`, `validate_parallax.py`, `export_godot.py`, `forge_schema.py` | Wang-16 tiles & tilemap builder, periodic parallax & validation, 2D layout validation, BFS nav reachability & Godot export |
 | 32 | `gamedev` | `godot-procedural-audio-and-sfx` | Godot (`2d`, `3d`) | `synth_sfx.py` | Pure-NumPy DSP generator for peak-normalized 16-bit WAV SFX |
 | 33 | `gamedev-3d` | `godot-3d-asset-and-rig-qa` | Godot (`3d` ONLY) | `audit_glb_assets.py` | GLB/glTF mesh, draw-call budget, texture & animation audit (never in 2D) |
+| 34 | `research` | `research-paper-and-literature` | Scope `research` | `paper_tools.py`, `check_synthesis.py` | Legal open-access PDF fetch/extraction, verbatim quote verification (`quotes.verify.json`) & `synthesis.md` citation gate |
+| 35 | `research` | `research-rigor-and-experiments` | Scope `research` | `audit_research_rigor.py` | AST data-leakage, PyTorch `eval()`/`inference_mode()`, seeding & claim traceability + Q1 statistical/ablation/UNDER-OVER guide |
+| 36 | `research` | `research-manuscript-and-prose-gate` | Scope `research` | `check_section.py`, `stylometry.py`, `check_figure_pdf.py` | LaTeX `.bib`/`numbers.md`/glossary gate, LLM prose stylometry with number/citation preservation & PDF venue/CVD palette audit |
