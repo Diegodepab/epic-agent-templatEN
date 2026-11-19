@@ -6,7 +6,7 @@
 If `init_project.py` and `_catalog/` exist at the repository root and the user asks to start, configure, or plan a new project without having run `init_project.py` yet:
 1. **Run the 5-Step Conversational Questionnaire** with the user in the chat:
    - **Step 1 (Coding Philosophy):** `minimal-yagni` (Ponytail 7-rung minimal) vs `clean-ddd` (Clean Architecture/DDD) vs `functional-dod` (Functional/DOD).
-   - **Step 2 (Nature, Modular Scope & Infrastructure):** `app-system` (pick any of `frontend`, `api`, `db`, `ml-gpu`, `profiling`), `library-cli`, or `game`, plus topology `single-node` vs `split-cpu-gpu` (multi-machine CPU + remote GPU/DB).
+   - **Step 2 (Nature, Modular Scope & Infrastructure):** `app-system` (pick any of `frontend`, `api`, `db`, `ml-gpu`, `profiling`, `research`), `library-cli`, or `game`, plus topology `single-node` vs `split-cpu-gpu` (multi-machine CPU + remote GPU/DB).
    - **Step 3 (Frontend Options, if `frontend` in scope):** `--ui-style` (`minimalist`, `neobrutalist`, `bento`, `glassmorphic`, `enterprise`, `editorial`, `terminal`, `fluid`), `--ui-tone` (`dark` | `light` for `minimalist`), and optional `--with-dataviz` / `--with-brand-logo`.
    - **Step 4 (Game Dimension, if `game`):** `2d` (default fast path, zero 3D bloat) vs `3d`.
    - **Step 5 (Documentation Selection):** Mandatory `README.md` + `docs/ARCHITECTURE.md`, plus optional `user-guide`, `adr`, `agent-guide`, `benchmarks`, `es`.

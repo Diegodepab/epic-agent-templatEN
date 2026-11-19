@@ -28,6 +28,7 @@
   - [ ] `db` (Database & Cache — injects `.env` database-redis + `db-migration-and-schema-gate` for SQL/Alembic/Drizzle)
   - [ ] `ml-gpu` (ML / GPU Workload — injects portable `device.py` + `.env` gpu-ml + `ml-gpu-workload-harness` & `runtime-profiling-and-observability`)
   - [ ] `profiling` (Opt-in runtime p50/p95 latency, `cProfile`/`tracemalloc` & structured log gate via `runtime-profiling-and-observability`)
+  - [ ] `research` (Scientific research & paper workflow — injects `research-paper-and-literature`, `research-rigor-and-experiments` & `research-manuscript-and-prose-gate` + `docs/BENCHMARKS.md`)
 - **Legacy Stack Presets (optional shortcut if not using `--scope` above):**
   - [ ] `web-frontend` | [ ] `python-backend` | [ ] `multi-module` | [ ] `ml-gpu`
 - **Infrastructure Topology (`--infra`):**

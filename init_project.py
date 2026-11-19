@@ -69,7 +69,12 @@ CORE_ALWAYS_SKILLS = [
     "github/git-commit-and-pr-gate",
 ]
 
-VALID_SCOPES = ("frontend", "api", "db", "ml-gpu", "profiling")
+VALID_SCOPES = ("frontend", "api", "db", "ml-gpu", "profiling", "research")
+RESEARCH_SKILLS = [
+    "research/research-paper-and-literature",
+    "research/research-rigor-and-experiments",
+    "research/research-manuscript-and-prose-gate",
+]
 INFRA_MODES = ("single-node", "split-cpu-gpu")
 DOC_OPTION_KEYS = ("user-guide", "adr", "agent-guide", "benchmarks", "es")
 
@@ -116,6 +121,7 @@ INTERACTIVE_HINTS: dict[str, dict[str, str]] = {
         "db": "Database/Redis config + SQL/Alembic/Drizzle migration gate",
         "ml-gpu": "Portable cuda/mps/cpu device.py + GPU telemetry & profiling skills",
         "profiling": "Runtime p50/p95 latency, cProfile/tracemalloc & log-leak auditing",
+        "research": "Paper PDF/quote verification, Q1 experiment rigor (anti-leakage) & LaTeX/prose/figure gates",
     },
     "infra": {
         "single-node": "Everything runs on one development/host machine",
@@ -666,7 +672,7 @@ def resolve_stack_and_scope(
                 scope_list.append(tok)
 
     for f in features:
-        if f in {"db", "api", "frontend", "ml-gpu", "profiling"} and f not in scope_list:
+        if f in {"db", "api", "frontend", "ml-gpu", "profiling", "research"} and f not in scope_list:
             scope_list.append(f)
 
     stack_name = raw_stack
@@ -687,6 +693,8 @@ def resolve_stack_and_scope(
                 stack_name = "web-frontend"
             elif has_ml and not has_be:
                 stack_name = "ml-gpu"
+            elif not has_be and "research" in scope_list:
+                stack_name = "python-cli"
             else:
                 stack_name = "python-backend"
         elif kind == "app-system":
@@ -732,6 +740,7 @@ def resolve_skills_list(
     explicit_skills: str | None,
     with_meta: bool,
     with_profiling: bool,
+    with_research: bool = False,
 ) -> list[str]:
     if explicit_skills:
         catalog_idx = load_catalog_index(catalog_dir)
@@ -767,6 +776,8 @@ def resolve_skills_list(
             resolved.append("infra/ml-gpu-workload-harness")
         if "profiling" in scope_list or "ml-gpu" in scope_list or with_profiling:
             resolved.append("testing/runtime-profiling-and-observability")
+        if "research" in scope_list or with_research:
+            resolved.extend(RESEARCH_SKILLS)
         resolved.append("testing/test-and-mutation-gate")
         if use_docker or infra_mode == "split-cpu-gpu":
             resolved.append("infra/docker-and-env-auditor")
@@ -804,6 +815,10 @@ def resolve_skills_list(
             "testing/runtime-profiling-and-observability" not in resolved
         ):
             resolved.append("testing/runtime-profiling-and-observability")
+        if "research" in scope_list or with_research:
+            for rs in RESEARCH_SKILLS:
+                if rs not in resolved:
+                    resolved.append(rs)
         if (use_docker or infra_mode == "split-cpu-gpu") and stack_name != "gamedev-godot":
             if "infra/docker-and-env-auditor" not in resolved:
                 resolved.append("infra/docker-and-env-auditor")
@@ -1175,19 +1190,21 @@ def resolve_addons_flags(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Initialize a Zero-Noise Gemini/Antigravity project from template.",
+        description="Initialize a Zero-Noise Gemini/Antigravity project from template (or adopt into an existing repo via --adopt).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
             "  python3 init_project.py\n"
             "  python3 init_project.py --kind game --dim 2d --name arcade-quest --yes\n"
             "  python3 init_project.py --kind app-system --scope frontend --ui-style minimalist --ui-tone dark --name studio-ui --yes\n"
-            "  python3 init_project.py --kind app-system --scope frontend,api,db,ml-gpu --infra split-cpu-gpu --ui-style fluid --name dist-app --yes"
+            "  python3 init_project.py --kind app-system --scope api,ml-gpu,research --infra split-cpu-gpu --name research-lab --yes\n"
+            "  python3 init_project.py --adopt /path/to/existing-repo --scope api,ml-gpu,profiling,research --infra split-cpu-gpu --yes"
         ),
     )
-    parser.add_argument("--root", default=".", help="Workspace root to initialize (default: .)")
+    parser.add_argument("--root", default=".", help="Template/workspace root (default: .)")
+    parser.add_argument("--adopt", help="Brownfield mode: non-destructively inject .agents/ skills, rules, hooks & safe AGENTS.md into an existing repository")
     parser.add_argument("--kind", "--nature", dest="kind", choices=["app-system", "library-cli", "game"], help="High-level project nature (alias: --nature)")
-    parser.add_argument("--scope", help="Comma-separated modular scope (frontend,api,db,ml-gpu,profiling)")
+    parser.add_argument("--scope", help="Comma-separated modular scope (frontend,api,db,ml-gpu,profiling,research)")
     parser.add_argument("--infra", choices=list(INFRA_MODES), help="Infrastructure topology: single-node | split-cpu-gpu (default: single-node)")
     parser.add_argument("--stack", help="Stack name under _catalog/stacks/")
     parser.add_argument("--from-spec", help="Read checked options from SPEC.md (e.g. _reference/SPEC.md)")
@@ -1200,8 +1217,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--with-dataviz", action="store_true", help="Include frontend-dataviz-and-charts skill")
     parser.add_argument("--with-brand-logo", action="store_true", help="Include brand-logo-and-svg-forge skill")
     parser.add_argument("--with-profiling", action="store_true", help="Include runtime-profiling-and-observability skill")
+    parser.add_argument("--with-research", action="store_true", help="Include all 3 scientific research skills (papers, Q1 rigor, manuscript/figures)")
     parser.add_argument("--agents", choices=["all", "antigravity", "gemini", "claude"], default="all", help="Agent hosts to wire (default: all)")
-    parser.add_argument("--features", help="Comma-separated optional features (e.g. pixel-art,rig-fx,autotile,sfx,dataviz,brand-logo,db,api,profiling)")
+    parser.add_argument("--features", help="Comma-separated optional features (e.g. pixel-art,rig-fx,autotile,sfx,dataviz,brand-logo,db,api,profiling,research)")
     parser.add_argument("--skills", help="Explicit comma-separated skill names/ids overriding manifest defaults")
     parser.add_argument("--addons", help="Comma-separated addons (docker, no-docker, dotenv:core+web-api, benchmarks)")
     parser.add_argument("--docker", dest="docker", action="store_true", default=None, help="Enable Docker addon")
@@ -1222,9 +1240,21 @@ def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
     catalog_dir = root / "_catalog"
+    if not catalog_dir.is_dir() and args.adopt:
+        script_root = Path(__file__).resolve().parent
+        if (script_root / "_catalog").is_dir():
+            root = script_root
+            catalog_dir = root / "_catalog"
     if not catalog_dir.is_dir():
         print(f"Error: `_catalog/` directory not found under {root}", file=sys.stderr)
         return 1
+
+    adopt_target: Path | None = None
+    if args.adopt:
+        adopt_target = Path(args.adopt).expanduser().resolve()
+        if not adopt_target.is_dir():
+            print(f"Error: `--adopt` target directory not found: {adopt_target}", file=sys.stderr)
+            return 1
 
     if args.list_catalog:
         cat_file = catalog_dir / "catalog.json"
@@ -1268,6 +1298,8 @@ def main() -> int:
         features.append("brand-logo")
     if args.with_profiling and "profiling" not in features:
         features.append("profiling")
+    if args.with_research and "research" not in features:
+        features.append("research")
 
     # Step 1: Coding Philosophy
     code_style = args.code_style or (
@@ -1409,7 +1441,7 @@ def main() -> int:
         )
         args.docs = ",".join(picked_docs) if picked_docs else "minimal"
 
-    doc_items, doc_level = resolve_doc_selection(doc_level, args.docs, spec_doc_items, with_benchmarks, stack_name)
+    doc_items, doc_level = resolve_doc_selection(doc_level, args.docs, spec_doc_items, with_benchmarks or ("research" in scope_list), stack_name)
     docs_mode = "bilingual" if "es" in doc_items else "en"
     with_benchmarks = "benchmarks" in doc_items
 
@@ -1427,6 +1459,7 @@ def main() -> int:
         args.skills,
         args.with_meta_skills,
         args.with_profiling,
+        args.with_research,
     )
 
     if args.dry_run:
@@ -1434,7 +1467,8 @@ def main() -> int:
             json.dumps(
                 {
                     "dry_run": True,
-                    "project": project_name,
+                    "adopt_target": str(adopt_target) if adopt_target else None,
+                    "project": adopt_target.name if (adopt_target and not args.name) else project_name,
                     "package": package_name,
                     "code_style": code_style,
                     "kind": kind,
@@ -1457,6 +1491,48 @@ def main() -> int:
                 },
                 indent=2,
             )
+        )
+        return 0
+
+    if adopt_target is not None:
+        adopt_name = args.name or adopt_target.name
+        base_rule = root / ".agents" / "rules" / "quality-and-planning.md"
+        if base_rule.is_file():
+            (adopt_target / ".agents" / "rules").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(base_rule, adopt_target / ".agents" / "rules" / "quality-and-planning.md")
+        installed_skills = inject_skills(adopt_target, catalog_dir, skills_rel)
+        inject_rules_and_hooks(
+            adopt_target,
+            catalog_dir,
+            manifest,
+            use_docker,
+            code_style=code_style,
+            ui_style=ui_profile,
+            ui_tone=ui_tone,
+            infra_mode=infra_mode,
+            doc_level=doc_level,
+            agents_mode=args.agents,
+            project_name=adopt_name,
+        )
+        tpl_agents = root / "AGENTS.md"
+        if tpl_agents.is_file():
+            clean_agents = re.sub(
+                r"\n?<!-- TEMPLATE_BOOTSTRAP_INTERVIEW:START -->.*?<!-- TEMPLATE_BOOTSTRAP_INTERVIEW:END -->\n?",
+                "\n",
+                tpl_agents.read_text(encoding="utf-8"),
+                flags=re.DOTALL,
+            )
+            agents_dest = adopt_target / ("AGENTS.template.md" if (adopt_target / "AGENTS.md").exists() else "AGENTS.md")
+            agents_dest.write_text(clean_agents, encoding="utf-8")
+        tpl_precommit = root / ".pre-commit-config.yaml"
+        if tpl_precommit.is_file() and not (adopt_target / ".pre-commit-config.yaml").exists():
+            shutil.copy2(tpl_precommit, adopt_target / ".pre-commit-config.yaml")
+        ratchet_py = adopt_target / ".agents" / "skills" / "clean-code-and-architecture-gate" / "scripts" / "size_ratchet.py"
+        if ratchet_py.is_file():
+            subprocess.run([sys.executable, "-B", str(ratchet_py), "--root", str(adopt_target), "--init"], check=False, capture_output=True)
+        print(
+            f"Adopted epic-agent-templatEN into `{adopt_target}` "
+            f"(code_style={code_style}, scope={','.join(scope_list) or 'core'}, infra={infra_mode}, skills={len(installed_skills)})."
         )
         return 0
 
