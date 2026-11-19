@@ -1,0 +1,44 @@
+{
+  "width": 12,
+  "height": 10,
+  "palette": {
+    "o": "#141824",
+    "d": "#1E6F50",
+    "m": "#29A869",
+    "h": "#8BE8A5",
+    "e": "#FFFFFF"
+  },
+  "variants": {
+    "crimson": {
+      "d": "#7C1D3A",
+      "m": "#C92A42",
+      "h": "#FF8FA3"
+    }
+  },
+  "frames": {
+    "idle_0": [
+      "............",
+      "....oooo....",
+      "..oommmmoo..",
+      ".omhhmmmmdo.",
+      ".ommmmmmmdo.",
+      ".omeemmmedo.",
+      ".ommmmmdddo.",
+      "ooddddddddoo",
+      ".oooooooooo.",
+      "............"
+    ],
+    "idle_1": [
+      "............",
+      "............",
+      "...oooooo...",
+      ".oommmmmmoo.",
+      "omhhmmmmddo.",
+      "omeemmmeddo.",
+      "ommmmmddddoo",
+      "ooddddddddoo",
+      ".oooooooooo.",
+      "............"
+    ]
+  }
+}
